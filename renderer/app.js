@@ -268,8 +268,7 @@ function renderPage() {
   const attempt = renderAttempt(p, st, hideSteps);
   if (attempt) page.append(attempt);
 
-  // Steps follow the problem directly. The status bar shows how many are revealed.
-  const shown = Math.min(st.revealed, p.steps.length);
+  // Steps follow the problem directly.
   if (!hideSteps) p.steps.forEach((step, i) => page.append(renderStep(step, i, st)));
 
   const finished = st.revealed >= p.steps.length;
@@ -290,9 +289,6 @@ function renderPage() {
     }
   }
 
-  el('st-progress').textContent = hideSteps
-    ? `Q${q.number} ${partLabel(p)} · no hints`
-    : `Q${q.number} ${partLabel(p)} · ${shown} of ${p.steps.length} steps shown`;
   ink?.redraw(); // cards may have moved
 }
 
@@ -947,7 +943,6 @@ function renderTestStart(page) {
     sec.append(tbl);
     page.append(sec);
   }
-  el('st-progress').textContent = 'Test mode';
 }
 
 function renderTestPart(page) {
@@ -1023,7 +1018,6 @@ function renderTestPart(page) {
   page.append(nav);
 
   if (t.confirming) page.append(renderSubmitConfirm());
-  el('st-progress').textContent = `Test · Q${q.number} ${partLabel(p)} · ${answered} of ${parts.length} answered`;
 }
 
 function askSubmit() {
@@ -1087,7 +1081,6 @@ function renderTestResults(page) {
   row.append(pdf, again, back);
   card.append(row);
   page.append(card);
-  el('st-progress').textContent = 'Test submitted';
 }
 
 // Handwriting as an SVG, cropped to the ink and scaled to fit `maxW` pixels.
@@ -1404,7 +1397,6 @@ function renderSettings() {
 
   const total = exams.reduce((n, e) => n + e.questions.reduce((m, q) => m + q.parts.length, 0), 0);
   page.append(node('p', 'set-foot', `${exams.length} exams and worksheets · ${total} parts.`));
-  el('st-progress').textContent = 'Settings';
 }
 
 // ---------- coins and shop ----------
@@ -1763,7 +1755,6 @@ function renderShop() {
     sec.append(grid);
     page.append(sec);
   }
-  el('st-progress').textContent = 'Shop';
 }
 
 // ---------- boot ----------

@@ -557,27 +557,6 @@ textarea.scratch::placeholder { color: var(--text-faint); }
 
 /* ---------- Status bar ---------- */
 
-#status {
-  flex: none;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 14px;
-  background: var(--bar-bg);
-  border-top: 1px solid var(--hairline);
-  font-size: 11.5px;
-  color: var(--text-dim);
-}
-#status .spacer { flex: 1; }
-#status kbd {
-  font: 10.5px/1 var(--mono);
-  border: 1px solid var(--field-border);
-  border-bottom-width: 2px;
-  border-radius: 4px;
-  padding: 2px 4px;
-  color: var(--text-dim);
-}
 
 /* ---------- Figures ---------- */
 
@@ -867,7 +846,7 @@ textarea.scratch::placeholder { color: var(--text-faint); }
 #pet {
   position: absolute;
   right: 22px;
-  bottom: 40px;
+  bottom: 14px;
   z-index: 4;
   width: 64px;
   cursor: pointer;
@@ -912,7 +891,7 @@ textarea.scratch::placeholder { color: var(--text-faint); }
 }
 .pet-bubble.show { opacity: 1; transform: translateY(0); }
 .shop-preview svg { display: block; margin: 3px auto 0; }
-.ios #pet { bottom: calc(44px + env(safe-area-inset-bottom, 0px)); }
+.ios #pet { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
 
 /* Accent colors bought in the shop. Blue is the default in :root. */
 :root[data-accent="green"] { --accent: #1d7f47; --accent-soft: #e4f3ea; --accent-line: #a8d5b9; --sel: #238a4f; }
@@ -963,14 +942,11 @@ textarea.scratch::placeholder { color: var(--text-faint); }
    The native iPad shell adds class="ios" to <html> before the page loads. */
 
 .ios body { -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%; }
-.ios #sidebar, .ios #toolbar, .ios #status, .ios button { -webkit-user-select: none; user-select: none; }
-
+.ios #sidebar, .ios #toolbar, 
 /* Room for the status bar and home indicator instead of macOS traffic lights. */
 .ios .drag { height: calc(env(safe-area-inset-top, 20px) + 10px); }
 .ios #toolbar { height: calc(56px + env(safe-area-inset-top, 20px)); padding-top: env(safe-area-inset-top, 20px); }
-.ios #status { height: auto; min-height: 30px; padding-bottom: env(safe-area-inset-bottom, 0px); }
-.ios #status kbd, .ios #status span:has(kbd) { display: none; }
-.ios .side-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.ios .ios .ios .side-foot { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
 
 /* Finger-sized targets. */
 .ios .q-row { min-height: 42px; font-size: 15px; }
