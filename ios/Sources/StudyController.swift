@@ -10,7 +10,18 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
 
     /// Scratch paper for the part the page is showing (see Paper.swift).
     @Published var paperOpen = false {
-        didSet { webView.evaluateJavaScript("window.__setPaperOpen && window.__setPaperOpen(\(paperOpen))") }
+        didSet {
+            webView.evaluateJavaScript("window.__setPaperOpen && window.__setPaperOpen(\(paperOpen))")
+            // Closing the Paper sends a visiting pet home.
+            if !paperOpen, let pet = paperPet { returnPet(edge: pet.edge, at: 0.6) }
+        }
+    }
+    /// The page's pet while it's visiting the Paper (see PaperPet.swift).
+    @Published private(set) var paperPet: PaperPetData?
+
+    func returnPet(edge: String, at: Double) {
+        paperPet = nil
+        webView.evaluateJavaScript("window.__petFromPaper && window.__petFromPaper('\(edge == "bottom" ? "bottom" : "right")', \(max(0, min(1, at))))")
     }
     /// The page's accent color (from the shop/theme), so native controls match it.
     @Published private(set) var accent = Color(red: 0.43, green: 0.66, blue: 0.97)
@@ -47,6 +58,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
           onCommand: (handler) => { window.__studyCommand = handler; },
           setTheme: (theme) => window.webkit.messageHandlers.theme.postMessage(theme),
           setAccent: (color) => window.webkit.messageHandlers.accent.postMessage(color),
+          petToPaper: (json) => window.webkit.messageHandlers.pet.postMessage(json),
           exportPDF: (html, name) => new Promise((resolve) => {
             window.__pdfDone = resolve;
             window.webkit.messageHandlers.pdf.postMessage({ html, name });
@@ -64,6 +76,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
         controller.add(WeakMessageHandler(self), name: "pdf")
         controller.add(WeakMessageHandler(self), name: "theme")
         controller.add(WeakMessageHandler(self), name: "accent")
+        controller.add(WeakMessageHandler(self), name: "pet")
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
@@ -143,6 +156,9 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
                 if CommandLine.arguments.contains("--open-paper"), !paperOpen { paperOpen = true }
                 #endif
             }
+        case "pet":
+            guard let json = message.body as? String else { return }
+            paperPet = json == "null" ? nil : try? JSONDecoder().decode(PaperPetData.self, from: Data(json.utf8))
         case "accent":
             // "#rrggbb" from the page's --accent.
             guard let hex = (message.body as? String)?.trimmingCharacters(in: .whitespaces).dropFirst(),

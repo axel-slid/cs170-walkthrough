@@ -1634,8 +1634,13 @@ const PET_CARE = {
       save();
     }
   },
-  openShop: () => showShop()
+  openShop: () => showShop(),
+  // iPad: the pet can be dragged over onto the Paper, which draws it natively.
+  paperOpen: () => paperIsOpen,
+  toPaper: window.study.petToPaper ? (data) => window.study.petToPaper(JSON.stringify(data)) : null,
+  recallFromPaper: () => window.study.petToPaper?.('null')
 };
+window.__petFromPaper = (edge, at) => pet.fromPaper(edge, at);
 
 // ---------- neglect ----------
 // A pet left alone gets sick after 3 days without a single answer, and dies after 5.
@@ -1914,7 +1919,9 @@ el('test-submit').onclick = () => {
 };
 el('paper-btn').hidden = !paper;
 el('paper-btn').onclick = () => paper?.toggle();
+let paperIsOpen = false;
 window.__setPaperOpen = (open) => {
+  paperIsOpen = open;
   el('paper-btn').classList.toggle('on', open);
   document.documentElement.classList.toggle('paper-open', open);
 };

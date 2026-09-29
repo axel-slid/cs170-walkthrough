@@ -547,8 +547,56 @@ export function createPet(host, care = {}) {
       return;
     }
     el.classList.remove('held');
+    // Let go past the page's edge, toward the iPad's Paper: the pet moves over to the Paper.
+    const edge = paperEdge(e);
+    if (edge) return toPaper(edge);
     land(d.floor);
   };
+
+  // ---------- visiting the Paper (iPad) ----------
+
+  let onPaper = false;
+  // Which side the Paper is on, if the pointer was released past it: right (landscape) or bottom (portrait).
+  function paperEdge(e) {
+    if (!care.toPaper || !care.paperOpen?.()) return null;
+    const h = host.getBoundingClientRect();
+    if (e.clientX > h.right - 6) return { edge: 'right', at: (e.clientY - h.top) / h.height };
+    if (e.clientY > h.bottom - 6 && window.innerHeight > window.innerWidth) return { edge: 'bottom', at: (e.clientX - h.left) / h.width };
+    return null;
+  }
+
+  function toPaper({ edge, at }) {
+    const P = PETS[kind];
+    care.toPaper({ rows: P.rows, flap: P.flap ?? null, colors: P.colors, bird: !!P.bird, slow: !!P.slow, edge, at: Math.max(0, Math.min(1, at)) });
+    flapping(false);
+    onPaper = true;
+    el.hidden = true;
+    busy = false;
+  }
+
+  // Back from the Paper: appear at the page's edge where it was dropped, then land.
+  function fromPaper(edge, at) {
+    if (!kind) return;
+    onPaper = false;
+    el.hidden = false;
+    el.style.top = el.style.left = el.style.right = el.style.bottom = '';
+    const floor = parseFloat(getComputedStyle(el).bottom) || 14;
+    const h = host.getBoundingClientRect();
+    const w = el.offsetWidth || 64;
+    const left = edge === 'bottom' ? Math.max(0, Math.min(h.width - w, at * h.width - w / 2)) : h.width - w - 4;
+    const top = edge === 'bottom' ? h.height - floor - el.offsetHeight - 120 : Math.max(0, Math.min(h.height - el.offsetHeight, at * h.height - el.offsetHeight / 2));
+    x = 0;
+    el.style.setProperty('--walk', '0px');
+    el.style.setProperty('--face', edge === 'bottom' ? 1 : -1);
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+    busy = true;
+    wake();
+    if (PETS[kind].bird) flapping(true);
+    land(floor);
+  }
   el.addEventListener('pointerup', release);
   el.addEventListener('pointercancel', release);
 
@@ -753,8 +801,13 @@ export function createPet(host, care = {}) {
 
   return {
     set(next) {
+      const changed = next !== kind;
       kind = next && PETS[next] ? next : null;
-      el.hidden = !kind;
+      if (changed && onPaper) {
+        onPaper = false;
+        care.recallFromPaper?.();
+      }
+      el.hidden = !kind || onPaper;
       if (!kind) return;
       asleep = false;
       el.classList.remove('asleep');
@@ -765,6 +818,7 @@ export function createPet(host, care = {}) {
       wander();
     },
     refresh,
+    fromPaper,
     say: (text, ms) => kind && say(text, ms),
     happy(big = false) {
       if (!kind) return;

@@ -65,6 +65,12 @@ struct StudyLayout: View {
                     PaperPane(key: study.paperKey, label: study.paperLabel, accent: study.accent, tools: tools, store: store) {
                         study.paperOpen = false
                     }
+                    .overlay {
+                        if let pet = study.paperPet {
+                            PaperPetLayer(pet: pet) { at in study.returnPet(edge: pet.edge, at: at) }
+                                .id(pet.rows.joined()) // a fresh layer (and landing) for each visit
+                        }
+                    }
                 }
             }
         }
