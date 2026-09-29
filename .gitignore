@@ -1,0 +1,4 @@
+node_modules/
+ios/build/
+ios/CS170Walkthrough.xcodeproj/
+.DS_Store

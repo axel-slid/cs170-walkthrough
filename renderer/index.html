@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>CS 170 Walkthrough</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Shared arrowheads for every figure. Kept rendered (not display:none) so markers resolve. -->
+  <svg class="defs" aria-hidden="true">
+    <defs>
+      <marker id="ah-plain" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-plain"/></marker>
+      <marker id="ah-accent" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-accent"/></marker>
+      <marker id="ah-good" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-good"/></marker>
+      <marker id="ah-warn" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-warn"/></marker>
+      <marker id="ah-bad" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-bad"/></marker>
+      <marker id="ah-muted" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="mk mk-muted"/></marker>
+    </defs>
+  </svg>
+
+  <aside id="sidebar">
+    <div class="drag"></div>
+    <div class="side-head">
+      <select class="exam-picker" id="exam-picker" title="Choose an exam"></select>
+      <div class="side-sub" id="side-sub"></div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="side-foot">
+      <div class="side-links">
+        <button class="side-link" id="cheat-btn">Cheat sheet</button>
+        <button class="side-link" id="shop-btn"><span class="coin"></span> Shop</button>
+      </div>
+      <div class="overall" id="overall"></div>
+    </div>
+  </aside>
+
+  <section id="main">
+    <div id="toolbar">
+      <div class="nav-btns">
+        <button class="tb-btn icon" id="prev-btn" title="Previous part (⌘[)">&#8249;</button>
+        <button class="tb-btn icon" id="next-btn" title="Next part (⌘])">&#8250;</button>
+      </div>
+      <span class="title" id="tb-title">&nbsp;</span>
+      <span class="spacer"></span>
+      <span class="streak" id="streak" hidden title="Correct answers in a row"></span>
+      <button class="coin-pill" id="coin-btn" title="Your coins. Click to open the shop."><span class="coin"></span><span id="coin-count">0</span></button>
+      <button class="tb-btn" id="ink-btn" title="Write on the page (the Apple Pencil always writes; this shows colors, eraser and undo)"><span class="long">✎ Ink</span><span class="short">✎</span></button>
+      <button class="tb-btn" id="paper-btn" hidden title="Apple Pencil paper for this part">Paper</button>
+      <button class="tb-btn" id="solution-btn" title="The official answer key for this question (⌘J)"><span class="long">Staff solution</span><span class="short">Solution</span></button>
+      <button class="tb-btn" id="reset-btn" title="Hide all steps again (⌘⌫)"><span class="long">Start over</span><span class="short">Reset</span></button>
+      <button class="tb-btn strong" id="all-btn" title="Reveal every step (⇧↩)"><span class="long">Show everything</span><span class="short">Show all</span></button>
+    </div>
+
+    <div id="scroll"><div class="page" id="page"></div></div>
+
+    <div id="solution" hidden>
+      <div class="sol-bar">
+        <div>
+          <div class="sol-title" id="sol-title"></div>
+          <div class="sol-sub" id="sol-sub"></div>
+        </div>
+        <span class="spacer"></span>
+        <button class="tb-btn strong" id="sol-close">Done</button>
+      </div>
+      <div class="sol-scroll" id="sol-scroll"></div>
+    </div>
+
+    <div id="status">
+      <span id="st-progress"></span>
+      <span class="spacer"></span>
+      <span><kbd>&#9166;</kbd> next step</span>
+      <span><kbd>&#8679;&#9166;</kbd> show everything</span>
+      <span><kbd>&#8984;]</kbd> next part</span>
+    </div>
+  </section>
+
+  <div id="toasts" aria-live="polite"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

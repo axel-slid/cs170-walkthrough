@@ -1,0 +1,14 @@
+{
+  "name": "cs170-walkthrough",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Guided walkthroughs of CS 170 midterm questions",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --experimental-vm-modules scripts/validate-content.cjs"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}
