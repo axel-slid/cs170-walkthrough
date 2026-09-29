@@ -1,35 +1,8 @@
 # CS 170 Walkthrough
 
-An Electron study app that walks through every question on past CS 170 midterms, one small step at a time, with a diagram wherever a picture helps. Pick
-the document from the menu at the top of the sidebar (grouped by kind):
+![A question](docs/screenshots/question.jpg)
 
-- Spring 2026 Midterm 1, 5 questions (including the bonus)
-- Fall and Spring 2025 Midterm 1, 8 and 10 questions (the original walkthroughs)
-- Fall and Spring 2024 Midterm 1, 11 questions each
-- Fall and Spring 2023 Midterm 1, 12 questions each
-- Fall and Spring 2022 Midterm 1, 10 and 12 questions
-- Fall and Spring 2021 Midterm 1, 4 questions each
-- Fall and Spring 2020 Midterm 1, 4 and 8 questions
-
-In total: 13 exams, 308 study parts and 521 guided steps. Some numbered short-answer
-subquestions are grouped into one study part when they share a derivation.
-
-## Screenshots (iPad, landscape)
-
-![Walkthrough with handwriting on the question](docs/screenshots/walkthrough.jpg)
-
-| | |
-|---|---|
-| ![Paper beside the page](docs/screenshots/paper.jpg) | ![No-hints mode with a typed answer](docs/screenshots/nohints.jpg) |
-| Apple Pencil Paper next to the question | No-hints mode: answer first, then check |
-| ![Test mode](docs/screenshots/test.jpg) | ![Test submitted, PDF in the share sheet](docs/screenshots/export.jpg) |
-| Test mode: timed, no hints | Submit, then share the PDF to ChatGPT or Claude |
-| ![Pet care](docs/screenshots/pet.jpg) | ![Shop with pets](docs/screenshots/shop.jpg) |
-| Feeding your pet (hunger and hearts) | The shop: pets, food, colors, effects |
-| ![Settings in light mode](docs/screenshots/settings.jpg) | ![Light theme](docs/screenshots/light.jpg) |
-| Settings | Light theme |
-
-![The exported PDF: grading instructions for the AI, then each question and answer](docs/screenshots/pdf.jpg)
+![The step-by-step explanation](docs/screenshots/answer.jpg)
 
 Studying:
 
