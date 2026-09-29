@@ -74,6 +74,12 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
         view.addInteraction(UIPencilInteraction(delegate: self))
         view.load(URLRequest(url: URL(string: "\(Self.scheme)://app/renderer/index.html")!))
         #if DEBUG
+        // Screenshots: `simctl launch … --js <base64>` runs a setup script once the page is up.
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--js"), i + 1 < args.count,
+           let data = Data(base64Encoded: args[i + 1]), let js = String(data: data, encoding: .utf8) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak view] in view?.evaluateJavaScript(js) }
+        }
         // Layout check for test mode: `simctl launch … --pdf-selftest` takes a test and exports it.
         if CommandLine.arguments.contains("--pdf-selftest") {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak view] in
@@ -190,8 +196,14 @@ final class PDFExporter: NSObject, WKNavigationDelegate {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [self] in render() }
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { finish(nil) }
-    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { finish(nil) }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("PDFExporter: load failed: \(error)")
+        finish(nil)
+    }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        NSLog("PDFExporter: provisional load failed: \(error)")
+        finish(nil)
+    }
 
     private func render() {
         guard let web else { return finish(nil) }
@@ -213,6 +225,7 @@ final class PDFExporter: NSObject, WKNavigationDelegate {
             try (data as Data).write(to: url, options: .atomic)
             finish(url)
         } catch {
+            NSLog("PDFExporter: write failed: \(error)")
             finish(nil)
         }
     }
@@ -220,7 +233,10 @@ final class PDFExporter: NSObject, WKNavigationDelegate {
     private func finish(_ url: URL?) {
         web?.removeFromSuperview()
         web = nil
-        guard let url, let host, var top = host.window?.rootViewController else { return done(false) }
+        guard let url, let host, var top = host.window?.rootViewController else {
+            NSLog("PDFExporter: nothing to share (url \(url != nil), window \(self.host?.window != nil))")
+            return done(false)
+        }
         while let next = top.presentedViewController { top = next }
         let share = UIActivityViewController(activityItems: [url], applicationActivities: nil)
         share.popoverPresentationController?.sourceView = host

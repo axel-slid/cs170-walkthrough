@@ -1227,3 +1227,16 @@ textarea.test-text:focus { outline: none; border-color: var(--accent); box-shado
 .memorial-pic svg { display: block; image-rendering: pixelated; }
 .memorial-text p { margin: 4px 0 12px; color: var(--text-dim); }
 .memorial .row { margin: 0; }
+.pet-note, .pet-fire { position: absolute; z-index: 5; pointer-events: none; }
+.pet-note { font-size: 18px; color: var(--accent); translate: -50% 0; }
+.pet-fire { width: 6px; height: 6px; border-radius: 1px; }
+.test-answer .attempt-input { width: 100%; }
+@media (max-width: 760px) {
+  .ios body { grid-template-columns: 224px 1fr; }
+  .ios .side-links { gap: 4px; }
+  .ios .side-links .side-link { font-size: 13px; padding-left: 6px; padding-right: 6px; }
+  .ios .side-links .side-link.gear { flex: 0 0 34px; }
+  .ios #pet { width: 48px; }
+  .ios #pet .pet-body svg { width: 48px; height: 48px; }
+  .ios #pet .pet-bars { width: 36px; }
+}

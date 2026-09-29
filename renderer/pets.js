@@ -39,14 +39,15 @@ const BIRD_FLAP = [
   '................',
   '................'
 ];
-const bird = (name, colors) => ({ name, bird: true, colors: { E: '#111318', O: '#f59e0b', ...colors }, rows: BIRD_REST, flap: BIRD_FLAP });
+const bird = (name, colors, trick) => ({ name, bird: true, trick, colors: { E: '#111318', O: '#f59e0b', ...colors }, rows: BIRD_REST, flap: BIRD_FLAP });
 
 export const PETS = {
   penguin: {
     name: 'Penguin',
-    // Can't really fly: flaps like mad and wobbles slowly down.
+    // Can't really fly: flaps like mad and wobbles slowly down, then belly-slides.
     bird: true,
     slow: true,
+    trick: 'slide',
     flap: [
       '................',
       '.....KKKKKK.....',
@@ -87,6 +88,7 @@ export const PETS = {
   },
   cat: {
     name: 'Cat',
+    trick: 'feet', // always lands on its feet
     colors: { O: '#f59e42', D: '#c26a1b', E: '#1f2433', P: '#f472b6', W: '#fff7ed' },
     rows: [
       '................',
@@ -109,6 +111,7 @@ export const PETS = {
   },
   dog: {
     name: 'Dog',
+    trick: 'tail', // chases its tail
     colors: { B: '#8b5a2b', T: '#e8b56a', E: '#1f2433', K: '#1f2433', P: '#f472b6', W: '#fff7ed' },
     rows: [
       '................',
@@ -131,6 +134,7 @@ export const PETS = {
   },
   frog: {
     name: 'Frog',
+    trick: 'leap', // leaps away in arcs
     colors: { G: '#4caf50', D: '#2e7d32', L: '#c5e8b7', W: '#ffffff', E: '#1f2433', R: '#7a2e2e' },
     rows: [
       '................',
@@ -153,6 +157,7 @@ export const PETS = {
   },
   bunny: {
     name: 'Bunny',
+    trick: 'binky', // a happy jump-twist, then hops
     colors: { W: '#f3f4f6', S: '#b8bcc6', P: '#f9a8c4', E: '#1f2433', N: '#e11d74' },
     rows: [
       '....SS....SS....',
@@ -175,6 +180,26 @@ export const PETS = {
   },
   dragon: {
     name: 'Dragon',
+    trick: 'fire', // glides on its wings and breathes fire
+    bird: true,
+    flap: [
+      'AA............AA',
+      'AAAY........YAAA',
+      '.AAYY......YYAA.',
+      '..DDDDDDDDDDDD..',
+      '.DDDDDDDDDDDDDD.',
+      '.DDEDDDDDDDEDDD.',
+      '.DDDDDDDDDDDDDD.',
+      '.DDDRDDDDDRDDDD.',
+      '..DDDDDDDDDDDD..',
+      '...DDDLLLLDDD...',
+      '..DDDLLLLLLDD...',
+      '..DDLLLLLLLLDD..',
+      '..DDLLLLLLLLDD.D',
+      '...DDDDDDDDDD.DD',
+      '...DD.....DD.DD.',
+      '................'
+    ],
     colors: { D: '#7c3aed', L: '#c4b5fd', Y: '#fbbf24', A: '#a78bfa', E: '#fef08a', R: '#4c1d95' },
     rows: [
       '................',
@@ -195,9 +220,9 @@ export const PETS = {
       '................'
     ]
   },
-  parrot: bird('Parrot', { H: '#ef4444', B: '#22c55e', W: '#2563eb', L: '#fde047' }),
-  owl: bird('Owl', { H: '#7c4a1e', B: '#8b5a2b', W: '#5c3a1a', L: '#e9d5b0' }),
-  bluebird: bird('Bluebird', { H: '#3b82f6', B: '#60a5fa', W: '#1d4ed8', L: '#fb923c' })
+  parrot: bird('Parrot', { H: '#ef4444', B: '#22c55e', W: '#2563eb', L: '#fde047' }, 'squawk'),
+  owl: bird('Owl', { H: '#7c4a1e', B: '#8b5a2b', W: '#5c3a1a', L: '#e9d5b0' }, 'hoot'),
+  bluebird: bird('Bluebird', { H: '#3b82f6', B: '#60a5fa', W: '#1d4ed8', L: '#fb923c' }, 'sing')
 };
 
 // A gravestone for pets that were left alone too long.
@@ -538,9 +563,11 @@ export function createPet(host, care = {}) {
     // Birds glide forward a little as they come down; the rest fall straight.
     const xEnd = isBird ? Math.max(0, Math.min(h.width - w, x0 + face * Math.min(120, Math.max(40, (yEnd - y0) * 0.35)))) : x0;
     const t0 = performance.now();
+    const trick = PETS[kind]?.trick;
     let vy = 0;
     let y = y0;
     let bounced = 0;
+    let lastNote = 0;
     el.classList.add('flying');
     if (!isBird) flapping(false);
     const stepFrame = (now) => {
@@ -552,10 +579,25 @@ export function createPet(host, care = {}) {
         const wobble = slow ? Math.sin(t * Math.PI * 6) * 12 * (1 - t) : 0;
         el.style.top = `${y0 + (yEnd - y0) * ease}px`;
         el.style.left = `${Math.max(0, Math.min(h.width - w, x0 + (xEnd - x0) * ease * (slow ? 0.4 : 1) + wobble))}px`;
+        if (trick === 'sing' && now - lastNote > 260) {
+          lastNote = now;
+          spawnNote();
+        }
         if (t < 1) return requestAnimationFrame(stepFrame);
       } else {
         vy += 0.9;
         y += vy;
+        if (trick === 'feet') {
+          // A full flip on the way down, feet first at the end.
+          body.style.rotate = `${Math.min(1, (y - y0) / Math.max(1, yEnd - y0)) * 360 * face}deg`;
+          if (y >= yEnd) {
+            body.style.rotate = '';
+            el.style.top = `${yEnd}px`;
+            return settle(x0, w, h.width);
+          }
+          el.style.top = `${y}px`;
+          return requestAnimationFrame(stepFrame);
+        }
         if (y >= yEnd) {
           y = yEnd;
           vy = -vy * 0.35;
@@ -581,10 +623,132 @@ export function createPet(host, care = {}) {
     el.style.left = '';
     el.style.bottom = '';
     el.style.right = `${Math.max(0, hostW - left - w)}px`;
-    busy = false;
     lastActive = Date.now();
-    play('hop', 500);
+    doTrick(PETS[kind]?.trick).finally(() => {
+      busy = false;
+    });
   }
+
+  // ---------- tricks after landing ----------
+
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const leftNow = () => host.clientWidth - (parseFloat(el.style.right) || 22) - el.offsetWidth;
+  const faceNow = () => Number(el.style.getPropertyValue('--face')) || 1;
+  const setFace = (f) => el.style.setProperty('--face', f);
+
+  // Moves along the floor (with an optional hop arc), then commits the new spot.
+  async function moveBy(dx, { ms = 600, arc = 0, easing = 'ease-out' } = {}) {
+    const left = leftNow();
+    const target = Math.max(4, Math.min(host.clientWidth - el.offsetWidth - 4, left + dx));
+    dx = target - left;
+    const frames = arc
+      ? [{ translate: '0 0' }, { translate: `${dx / 2}px ${-arc}px`, offset: 0.5 }, { translate: `${dx}px 0` }]
+      : [{ translate: '0 0' }, { translate: `${dx}px 0` }];
+    await el.animate(frames, { duration: ms, easing: arc ? 'ease-in-out' : easing }).finished;
+    el.style.right = `${host.clientWidth - target - el.offsetWidth}px`;
+  }
+
+  // Little things that float off the pet (music notes, fire).
+  function spawnBit(cls, text, dx, dy, ms, color) {
+    const r = el.getBoundingClientRect();
+    const hr = host.getBoundingClientRect();
+    const b = document.createElement('span');
+    b.className = cls;
+    if (text) b.textContent = text;
+    if (color) b.style.background = color;
+    b.style.left = `${r.left - hr.left + r.width / 2}px`;
+    b.style.top = `${r.top - hr.top + r.height * 0.35}px`;
+    host.append(b);
+    b.animate([{ translate: '0 0', opacity: 1 }, { translate: `${dx}px ${dy}px`, opacity: 0 }], { duration: ms, easing: 'ease-out' }).finished.then(() => b.remove());
+  }
+  const spawnNote = () => spawnBit('pet-note', Math.random() < 0.5 ? '♪' : '♫', (Math.random() - 0.5) * 40, -60 - Math.random() * 30, 1300);
+
+  const PARROT = ['Squawk! O(n log n)!', 'Dijkstra! Dijkstra!', 'Polly wants a proof!', 'Big-O! Big-O!', 'Squawk! Master theorem!', 'Topo sort! Squawk!'];
+
+  async function doTrick(trick) {
+    switch (trick) {
+      case 'slide': {
+        say('Wheee!', 1400);
+        body.style.rotate = `${-80 * faceNow()}deg`;
+        await moveBy(faceNow() * 150, { ms: 1100, easing: 'cubic-bezier(.15,.7,.3,1)' });
+        body.style.rotate = '';
+        play('hop', 500);
+        break;
+      }
+      case 'feet':
+        play('hop', 500);
+        say(['Nailed it.', 'Obviously.', 'Mrrp.'][Math.floor(Math.random() * 3)], 1500);
+        break;
+      case 'tail': {
+        say('Woof! Woof!', 1500);
+        for (let i = 0; i < 10; i++) {
+          setFace(-faceNow());
+          await wait(90);
+        }
+        play('hop', 500);
+        break;
+      }
+      case 'leap': {
+        say('Ribbit!', 1400);
+        const dir = faceNow() || -1;
+        await moveBy(dir * 70, { ms: 420, arc: 55 });
+        await moveBy(dir * 70, { ms: 420, arc: 45 });
+        break;
+      }
+      case 'binky': {
+        await el.animate([{ translate: '0 0' }, { translate: '0 -42px', offset: 0.5 }, { translate: '0 0' }], { duration: 520, easing: 'ease-in-out' }).finished;
+        body.animate([{ rotate: '0deg' }, { rotate: '-25deg', offset: 0.3 }, { rotate: '25deg', offset: 0.7 }, { rotate: '0deg' }], { duration: 520 });
+        say('♥', 1200);
+        const dir = faceNow();
+        for (let i = 0; i < 3; i++) await moveBy(dir * 28, { ms: 230, arc: 14 });
+        break;
+      }
+      case 'fire': {
+        say('Rawr!', 1400);
+        const dir = faceNow();
+        for (let i = 0; i < 18; i++) {
+          const c = ['#f97316', '#fbbf24', '#ef4444', '#fde047'][i % 4];
+          spawnBit('pet-fire', '', dir * (60 + Math.random() * 70), (Math.random() - 0.5) * 36, 500 + Math.random() * 300, c);
+          if (i % 3 === 2) await wait(40);
+        }
+        play('hop', 500);
+        break;
+      }
+      case 'squawk':
+        play('jump', 600);
+        say(PARROT[Math.floor(Math.random() * PARROT.length)], 2000);
+        break;
+      case 'hoot': {
+        for (let i = 0; i < 4; i++) {
+          setFace(-faceNow());
+          await wait(240);
+        }
+        say('Hoo?', 1400);
+        break;
+      }
+      case 'sing':
+        say('Tweet!', 1300);
+        for (let i = 0; i < 3; i++) {
+          spawnNote();
+          await wait(200);
+        }
+        break;
+      default:
+        play('hop', 500);
+    }
+  }
+
+  // The page can get narrower (Paper opening beside it, rotation): keep the pet on screen.
+  function keepOnScreen() {
+    if (!kind || busy) return;
+    const w = el.offsetWidth || 64;
+    const maxRight = host.clientWidth - w - 4;
+    const right = parseFloat(el.style.right);
+    if (!Number.isNaN(right) && right > maxRight) el.style.right = `${Math.max(4, maxRight)}px`;
+    x = 0;
+    el.style.setProperty('--walk', '0px');
+  }
+  new ResizeObserver(keepOnScreen).observe(host);
   for (const type of ['keydown', 'pointerdown']) document.addEventListener(type, wake, { passive: true });
 
   return {

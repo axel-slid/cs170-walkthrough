@@ -40,7 +40,7 @@ const state = {
   // Coins and the shop. `awarded` remembers every reward already paid, so starting a part
   // over can't be used to farm coins.
   game: { coins: 0, earned: 0, awarded: {}, owned: ['accent-blue'], equipped: { accent: 'accent-blue', burst: null, finish: null, pet: null }, streak: 0, best: 0,
-    food: {}, care: {}, daily: { last: null, count: 0, best: 0 }, lastStudy: null, graveyard: [], memorial: null }
+    food: {}, care: {}, lastStudy: null, graveyard: [], memorial: null }
 };
 
 const slotKey = (q, p) => `${exam.id}:${q}.${p}`;
@@ -187,12 +187,11 @@ function renderToolbar() {
 
 // When the window is narrow (iPad landscape with Paper open, split view…) the least-used
 // toolbar buttons move into a “⋯” menu instead of squeezing together.
-const OVERFLOW_ORDER = ['reset-btn', 'hints-btn', 'test-btn', 'day-btn', 'solution-btn', 'side-btn', 'ink-btn'];
+const OVERFLOW_ORDER = ['reset-btn', 'hints-btn', 'test-btn', 'solution-btn', 'side-btn', 'ink-btn'];
 const OVERFLOW_LABELS = {
   'reset-btn': 'Start over',
   'hints-btn': 'No-hints mode',
   'test-btn': 'Test mode',
-  'day-btn': 'Daily streak',
   'solution-btn': 'Staff solution',
   'side-btn': 'Sidebar',
   'ink-btn': 'Ink'
@@ -227,11 +226,10 @@ function toggleMoreMenu(force) {
   for (const id of OVERFLOW_ORDER) {
     const src = el(id);
     if (!src.classList.contains('in-overflow') || src.hidden) continue;
-    const item = node('button', `more-item${src.classList.contains('on') || src.classList.contains('lit') ? ' on' : ''}`);
+    const item = node('button', `more-item${src.classList.contains('on') ? ' on' : ''}`);
     const icon = src.querySelector('svg')?.cloneNode(true);
     if (icon) item.append(icon);
     let label = OVERFLOW_LABELS[id];
-    if (id === 'day-btn') label += ` · ${el('day-count').textContent} days`;
     item.append(node('span', null, label));
     item.onclick = () => {
       toggleMoreMenu(false);
@@ -468,6 +466,7 @@ function toggleSidebar() {
 
 function toggleHints() {
   state.prefs.noHints = !state.prefs.noHints;
+  state.walk.clear(); // turning it on hides the steps everywhere again
   save();
   renderToolbar();
   if (state.view === 'part') renderPage();
@@ -763,6 +762,7 @@ function toggleKey() {
 function resetPart() {
   if (state.view !== 'part') return;
   state.progress[slotKey(state.questionNumber, state.partId)] = { revealed: 0, keyOpen: false, notes: {}, picks: {} };
+  state.walk.delete(slotKey(state.questionNumber, state.partId)); // back to no-hints if it's on
   save();
   renderPage();
   renderSidebar();
@@ -1340,6 +1340,7 @@ function applyPrefs() {
 
 function setPref(key, value) {
   state.prefs[key] = value;
+  if (key === 'noHints') state.walk.clear();
   save();
   applyPrefs();
   if (key === 'showPet') applyLooks();
@@ -1421,7 +1422,7 @@ function renderSettings() {
   group('Tests', [row('Default time limit', `You’ve taken ${hist} test${hist === 1 ? '' : 's'}.`, limit)]);
 
   const reset = node('button', 'btn danger', 'Reset…');
-  const resetRow = row('Reset study progress', 'Hides every step you’ve revealed and clears your notes and handwriting, for every exam. Coins, pets, streaks and test history stay.', reset);
+  const resetRow = row('Reset study progress', 'Hides every step you’ve revealed and clears your notes and handwriting, for every exam. Coins, pets and test history stay.', reset);
   reset.onclick = () => {
     if (resetRow.querySelector('.set-confirm')) return;
     const c = node('div', 'set-confirm');
@@ -1469,15 +1470,15 @@ const SHOP = [
     { id: 'finish-fireworks', name: 'Fireworks', price: 250, slot: 'finish', desc: 'A few bursts over the page.' }
   ] },
   { group: 'Pets', note: 'A little pixel friend who lives in the corner of the page. It cheers when you get things right, and naps when you’re away. It has to be fed: tap it to see its hunger and hearts and give it food. You can also drag it around.', items: [
-    { id: 'pet-penguin', name: 'Penguin', price: 120, slot: 'pet', sprite: 'penguin', desc: 'Drag it up high and let go: it flaps its way slowly back down.' },
-    { id: 'pet-cat', name: 'Cat', price: 150, slot: 'pet', sprite: 'cat' },
-    { id: 'pet-dog', name: 'Dog', price: 150, slot: 'pet', sprite: 'dog' },
-    { id: 'pet-frog', name: 'Frog', price: 150, slot: 'pet', sprite: 'frog' },
-    { id: 'pet-bunny', name: 'Bunny', price: 180, slot: 'pet', sprite: 'bunny' },
-    { id: 'pet-dragon', name: 'Dragon', price: 300, slot: 'pet', sprite: 'dragon' },
-    { id: 'pet-bluebird', name: 'Bluebird', price: 160, slot: 'pet', sprite: 'bluebird', desc: 'Drag it up high and let go: it flies back down.' },
-    { id: 'pet-owl', name: 'Owl', price: 200, slot: 'pet', sprite: 'owl', desc: 'Drag it up high and let go: it flies back down.' },
-    { id: 'pet-parrot', name: 'Parrot', price: 220, slot: 'pet', sprite: 'parrot', desc: 'Drag it up high and let go: it flies back down.' }
+    { id: 'pet-penguin', name: 'Penguin', price: 120, slot: 'pet', sprite: 'penguin', desc: 'Drop it from up high: it flaps its way slowly down, then belly-slides.' },
+    { id: 'pet-cat', name: 'Cat', price: 150, slot: 'pet', sprite: 'cat', desc: 'Drop it from up high: it flips and always lands on its feet.' },
+    { id: 'pet-dog', name: 'Dog', price: 150, slot: 'pet', sprite: 'dog', desc: 'Drop it: it bounces, then chases its tail.' },
+    { id: 'pet-frog', name: 'Frog', price: 150, slot: 'pet', sprite: 'frog', desc: 'Drop it: it leaps away in big arcs.' },
+    { id: 'pet-bunny', name: 'Bunny', price: 180, slot: 'pet', sprite: 'bunny', desc: 'Drop it: it does a happy binky, then hops off.' },
+    { id: 'pet-dragon', name: 'Dragon', price: 300, slot: 'pet', sprite: 'dragon', desc: 'Drop it: it glides down on its wings and breathes fire.' },
+    { id: 'pet-bluebird', name: 'Bluebird', price: 160, slot: 'pet', sprite: 'bluebird', desc: 'Drop it: it sings all the way down.' },
+    { id: 'pet-owl', name: 'Owl', price: 200, slot: 'pet', sprite: 'owl', desc: 'Drop it: it glides down and turns its head.' },
+    { id: 'pet-parrot', name: 'Parrot', price: 220, slot: 'pet', sprite: 'parrot', desc: 'Drop it: it squawks algorithm facts.' }
   ] },
   { group: 'Pet food', note: 'Pets get hungry over about a day and a half, and a hungry pet starts losing hearts. Tap your pet to feed it. Hearts also go up when you pet it and when you get answers right.', items: [
     { id: 'snack', name: 'Snack', price: 10, slot: 'food', food: 'snack', hunger: 25, hearts: 2, desc: 'A quarter of the hunger bar.' },
@@ -1493,7 +1494,7 @@ const owns = (id) => state.game.owned.includes(id);
 
 function earn(key, amount, reason) {
   const g = state.game;
-  if (!key.startsWith('daily:')) markActive();
+  markActive();
   if (g.awarded[key]) return false;
   g.awarded[key] = true;
   g.coins += amount;
@@ -1656,50 +1657,14 @@ function renderMemorial(page) {
   page.append(card);
 }
 
-// ---------- daily streak ----------
+// ---------- activity ----------
 
 const dayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-const yesterdayKey = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return dayKey(d);
-};
 
-// The streak as it stands right now: it's broken if you skipped a whole day.
-function dailyNow() {
-  const d = state.game.daily;
-  const alive = d.last === dayKey() || d.last === yesterdayKey();
-  return { count: alive ? d.count : 0, today: d.last === dayKey(), best: d.best };
-}
-
+// Any answer or revealed step counts as studying; it keeps pets alive (see “neglect”).
 function markActive() {
-  state.game.lastStudy = Date.now(); // keeps pets alive (see “neglect”)
+  state.game.lastStudy = Date.now();
   pet?.refresh?.();
-  const d = state.game.daily;
-  const today = dayKey();
-  if (d.last === today) return;
-  d.count = d.last === yesterdayKey() ? d.count + 1 : 1;
-  d.best = Math.max(d.best, d.count);
-  d.last = today;
-  earn(`daily:${today}`, Math.min(50, 5 * d.count), d.count > 1 ? `${d.count}-day streak` : 'First study day');
-  renderDaily(true);
-}
-
-function renderDaily(bump = false) {
-  const { count, today, best } = dailyNow();
-  const pill = el('day-btn');
-  el('day-count').textContent = count;
-  pill.classList.toggle('lit', today);
-  pill.title = today
-    ? `Daily streak: ${count} day${count === 1 ? '' : 's'} (best ${best}). You’ve studied today.`
-    : count
-      ? `Daily streak: ${count} day${count === 1 ? '' : 's'}. Study something today to keep it going!`
-      : `Daily streak: study something today to start one (best ${best}).`;
-  if (bump) {
-    pill.classList.remove('bump');
-    void pill.offsetWidth;
-    pill.classList.add('bump');
-  }
 }
 
 function renderCoins(bump = false) {
@@ -1710,7 +1675,6 @@ function renderCoins(bump = false) {
     void pill.offsetWidth; // restart the animation
     pill.classList.add('bump');
   }
-  renderDaily();
   const streak = el('streak');
   streak.hidden = !owns('extra-streak') || state.game.streak < 2;
   streak.textContent = `${state.game.streak} in a row`;
@@ -1784,8 +1748,7 @@ function renderShop() {
   page.append(node('h1', null, 'Shop'));
 
   const bal = node('div', 'shop-balance');
-  const day = dailyNow();
-  bal.append(node('span', 'coin big'), node('b', null, String(g.coins)), node('span', null, `coins · ${g.earned} earned all time · ${day.count}-day streak (best ${day.best}) · best run ${g.best} in a row`));
+  bal.append(node('span', 'coin big'), node('b', null, String(g.coins)), node('span', null, `coins · ${g.earned} earned all time · best run ${g.best} in a row`));
   page.append(bal);
 
 
@@ -1868,10 +1831,7 @@ ink = createInk({
   }
 });
 window.__ink = (action) => ink.pencil(action);
-setInterval(() => {
-  renderDaily(); // the streak can go stale at midnight
-  checkPetDeath();
-}, 60000);
+setInterval(checkPetDeath, 60000);
 
 function renderAll() {
   renderSidebar();
@@ -1890,7 +1850,6 @@ el('reset-btn').onclick = resetPart;
 el('cheat-btn').onclick = showCheatsheet;
 el('shop-btn').onclick = showShop;
 el('coin-btn').onclick = showShop;
-el('day-btn').onclick = showShop;
 el('solution-btn').onclick = () => toggleSolution();
 el('hints-btn').onclick = toggleHints;
 el('side-btn').onclick = toggleSidebar;

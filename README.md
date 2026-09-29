@@ -14,6 +14,23 @@ the document from the menu at the top of the sidebar (grouped by kind):
 In total: 13 exams, 308 study parts and 521 guided steps. Some numbered short-answer
 subquestions are grouped into one study part when they share a derivation.
 
+## Screenshots (iPad, landscape)
+
+![Walkthrough with handwriting on the question](docs/screenshots/walkthrough.jpg)
+
+| | |
+|---|---|
+| ![Paper beside the page](docs/screenshots/paper.jpg) | ![No-hints mode with a typed answer](docs/screenshots/nohints.jpg) |
+| Apple Pencil Paper next to the question | No-hints mode: answer first, then check |
+| ![Test mode](docs/screenshots/test.jpg) | ![Test submitted, PDF in the share sheet](docs/screenshots/export.jpg) |
+| Test mode: timed, no hints | Submit, then share the PDF to ChatGPT or Claude |
+| ![Pet care](docs/screenshots/pet.jpg) | ![Shop with pets](docs/screenshots/shop.jpg) |
+| Feeding your pet (hunger and hearts) | The shop: pets, food, colors, effects |
+| ![Settings in light mode](docs/screenshots/settings.jpg) | ![Light theme](docs/screenshots/light.jpg) |
+| Settings | Light theme |
+
+![The exported PDF: grading instructions for the AI, then each question and answer](docs/screenshots/pdf.jpg)
+
 Studying:
 
 - Each part shows the full question, then small steps: a prompt to think about, then the answer
@@ -35,8 +52,9 @@ Claude and say "grade this". The PDF is printed by Electron (`printToPDF`) on th
 
 Extras: coins for correct answers and a shop (accent colors, celebration effects, pet food,
 pixel pets that live in the corner of the page and can be dragged; birds fly back down).
-Pets get hungry over about a day and a half and have a hearts bar; tap one to feed it. A daily
-streak pays coins for studying on consecutive days. Settings (the gear, or ⌘,) has the theme
+Pets get hungry over about a day and a half and have a hearts bar; tap one to feed it. A pet
+left alone gets sick after 3 days without an answer and dies after 5. Each pet has a trick
+when dropped: the cat lands on its feet, the frog leaps away, the dragon breathes fire. Settings (the gear, or ⌘,) has the theme
 (System, Light, Dark), text size, and toggles for the sidebar, celebrations and the pet.
 
 Code: `renderer/app.js` (views, test mode, PDF export, shop, settings), `renderer/ink.js`,
