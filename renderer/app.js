@@ -177,13 +177,14 @@ function toggleExamMenu(force) {
     };
     menu.append(row);
   }
-  menu.querySelector('.current')?.scrollIntoView({ block: 'nearest' });
+  // Scroll just the menu (scrollIntoView would also scroll the whole window).
+  const cur = menu.querySelector('.current');
+  if (cur) menu.scrollTop = cur.offsetTop - menu.clientHeight / 2 + cur.offsetHeight / 2;
 }
 
 function renderSidebar() {
   el('exam-btn-label').textContent = `${exam.term} · ${exam.title}`;
   el('exam-btn-ring').innerHTML = ring(examFraction(exam));
-  el('side-sub').textContent = `${exam.course} · ${exam.instructors}`;
   const nav = el('nav');
   nav.replaceChildren();
 

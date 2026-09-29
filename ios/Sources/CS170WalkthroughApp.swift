@@ -7,6 +7,8 @@ struct CS170WalkthroughApp: App {
     var body: some Scene {
         WindowGroup {
             StudyLayout(study: study)
+                .statusBarHidden(true) // no clock or battery: nothing but the work
+                .persistentSystemOverlays(.hidden)
         }
         .commands {
             // Return and Shift-Return are handled by the page itself so they still type

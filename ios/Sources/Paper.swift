@@ -115,6 +115,15 @@ private let paperColor = UIColor { $0.userInterfaceStyle == .dark
     ? UIColor(red: 0.11, green: 0.11, blue: 0.12, alpha: 1)
     : .white }
 
+/// The page toolbar's colors (renderer/styles.css: --bar-bg and --hairline), so the Paper's
+/// header lines up with it as one bar.
+private let toolbarColor = UIColor { $0.userInterfaceStyle == .dark
+    ? UIColor(red: 0x26 / 255, green: 0x26 / 255, blue: 0x2a / 255, alpha: 1)
+    : UIColor(red: 0xf7 / 255, green: 0xf7 / 255, blue: 0xf9 / 255, alpha: 1) }
+private let hairlineColor = UIColor { $0.userInterfaceStyle == .dark
+    ? UIColor(red: 0x37 / 255, green: 0x37 / 255, blue: 0x3c / 255, alpha: 1)
+    : UIColor(red: 0xe2 / 255, green: 0xe1 / 255, blue: 0xe6 / 255, alpha: 1) }
+
 /// Paper under a PencilKit canvas. PencilKit owns the viewport and zoom, so ink is never
 /// enlarged by a parent scroll view; the paper underlay just follows the canvas geometry.
 final class PaperCanvasView: UIView {
@@ -341,9 +350,9 @@ struct PaperPane: View {
             }
             .font(.system(size: 17))
             .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(Color(uiColor: .secondarySystemBackground))
-            Divider()
+            .frame(height: 56) // same height as the page's toolbar beside it
+            .background(Color(uiColor: toolbarColor))
+            Rectangle().fill(Color(uiColor: hairlineColor)).frame(height: 1)
             PaperView(key: key, tools: tools, store: store)
                 .id(key) // a fresh canvas, and its saved ink, for each part
                 .ignoresSafeArea(edges: .bottom) // paper runs under the home indicator
