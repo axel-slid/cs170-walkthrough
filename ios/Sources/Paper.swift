@@ -15,11 +15,13 @@ final class PaperTools: ObservableObject {
 
     let inkColors: [UIColor] = [
         .black,
-        UIColor(red: 0.23, green: 0.39, blue: 0.68, alpha: 1),
-        UIColor(red: 0.69, green: 0.42, blue: 0.20, alpha: 1),
-        UIColor(red: 0.55, green: 0.36, blue: 0.64, alpha: 1)
+        UIColor(red: 0.15, green: 0.39, blue: 0.92, alpha: 1),
+        UIColor(red: 0.86, green: 0.15, blue: 0.15, alpha: 1),
+        UIColor(red: 0.09, green: 0.64, blue: 0.29, alpha: 1),
+        UIColor(red: 0.58, green: 0.20, blue: 0.92, alpha: 1),
+        UIColor(red: 0.92, green: 0.46, blue: 0.08, alpha: 1)
     ]
-    let colorNames = ["Black", "Blue", "Brown", "Purple"]
+    let colorNames = ["Black", "Blue", "Red", "Green", "Purple", "Orange"]
 
     var isUsingEraser: Bool { isEraser || isSqueezing }
     var currentTool: PKTool {
@@ -288,6 +290,7 @@ struct PaperView: UIViewRepresentable {
 struct PaperPane: View {
     let key: String
     let label: String
+    let accent: Color
     @ObservedObject var tools: PaperTools
     let store: PaperStore
     let onClose: () -> Void
@@ -295,12 +298,9 @@ struct PaperPane: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 14) {
-                VStack(alignment: .leading, spacing: 1) {
-                    Text("Paper").font(.headline)
-                    Text(label).font(.caption).foregroundStyle(.secondary)
-                }
-                Spacer()
+            HStack(spacing: 10) {
+                Text("Paper").font(.headline)
+                Spacer(minLength: 8)
                 Button { tools.toggleEraser() } label: {
                     Image(systemName: tools.isUsingEraser ? "eraser.fill" : "pencil.tip")
                         .frame(width: 30, height: 30)
@@ -314,25 +314,22 @@ struct PaperPane: View {
                     Image(systemName: "arrow.uturn.forward").frame(width: 30, height: 30)
                 }
                 .accessibilityLabel("Redo")
-                Menu {
+                // Ink colors as dots: tap one to write in it.
+                HStack(spacing: 7) {
                     ForEach(tools.inkColors.indices, id: \.self) { index in
+                        let on = !tools.isUsingEraser && tools.inkColorIndex == index
                         Button { tools.selectColor(index) } label: {
-                            if tools.inkColorIndex == index {
-                                Label(tools.colorNames[index], systemImage: "checkmark")
-                            } else {
-                                Text(tools.colorNames[index])
-                            }
+                            Circle()
+                                // Black ink shows as white on dark paper, so match what's on screen.
+                                .fill(index == 0 ? Color.primary : Color(uiColor: tools.inkColors[index]))
+                                .frame(width: on ? 20 : 16, height: on ? 20 : 16)
+                                .overlay(Circle().stroke(accent, lineWidth: 2).frame(width: 26, height: 26).opacity(on ? 1 : 0))
+                                .frame(width: 26, height: 30)
+                                .animation(.easeOut(duration: 0.15), value: on)
                         }
+                        .accessibilityLabel("\(tools.colorNames[index]) ink")
                     }
-                } label: {
-                    Circle()
-                        // Black ink shows as white on dark paper, so match what's on screen.
-                        .fill(tools.inkColorIndex == 0 ? Color.primary : Color(uiColor: tools.inkColors[tools.inkColorIndex]))
-                        .overlay(Circle().stroke(Color.secondary.opacity(0.5), lineWidth: 1))
-                        .frame(width: 22, height: 22)
-                        .frame(width: 30, height: 30)
                 }
-                .accessibilityLabel("Ink color")
                 Button { confirmingClear = true } label: {
                     Image(systemName: "trash").frame(width: 30, height: 30)
                 }
@@ -349,7 +346,8 @@ struct PaperPane: View {
                 .accessibilityLabel("Close paper")
             }
             .font(.system(size: 17))
-            .padding(.horizontal, 16)
+            .tint(accent) // the app's accent color, like the page's toolbar
+            .padding(.horizontal, 14)
             .frame(height: 56) // same height as the page's toolbar beside it
             .background(Color(uiColor: toolbarColor))
             Rectangle().fill(Color(uiColor: hairlineColor)).frame(height: 1)

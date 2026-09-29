@@ -12,6 +12,8 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
     @Published var paperOpen = false {
         didSet { webView.evaluateJavaScript("window.__setPaperOpen && window.__setPaperOpen(\(paperOpen))") }
     }
+    /// The page's accent color (from the shop/theme), so native controls match it.
+    @Published private(set) var accent = Color(red: 0.43, green: 0.66, blue: 0.97)
     @Published private(set) var paperKey = ""
     @Published private(set) var paperLabel = ""
 
@@ -44,6 +46,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
           },
           onCommand: (handler) => { window.__studyCommand = handler; },
           setTheme: (theme) => window.webkit.messageHandlers.theme.postMessage(theme),
+          setAccent: (color) => window.webkit.messageHandlers.accent.postMessage(color),
           exportPDF: (html, name) => new Promise((resolve) => {
             window.__pdfDone = resolve;
             window.webkit.messageHandlers.pdf.postMessage({ html, name });
@@ -60,6 +63,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
         controller.add(WeakMessageHandler(self), name: "paper")
         controller.add(WeakMessageHandler(self), name: "pdf")
         controller.add(WeakMessageHandler(self), name: "theme")
+        controller.add(WeakMessageHandler(self), name: "accent")
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
@@ -139,6 +143,11 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
                 if CommandLine.arguments.contains("--open-paper"), !paperOpen { paperOpen = true }
                 #endif
             }
+        case "accent":
+            // "#rrggbb" from the page's --accent.
+            guard let hex = (message.body as? String)?.trimmingCharacters(in: .whitespaces).dropFirst(),
+                  hex.count == 6, let v = UInt32(hex, radix: 16) else { return }
+            accent = Color(red: Double((v >> 16) & 0xff) / 255, green: Double((v >> 8) & 0xff) / 255, blue: Double(v & 0xff) / 255)
         case "theme":
             // Light/Dark from Settings: applies to the whole app, including the Paper panel.
             let style: UIUserInterfaceStyle = switch message.body as? String {

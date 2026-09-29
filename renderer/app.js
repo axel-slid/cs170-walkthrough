@@ -1365,6 +1365,7 @@ function applyPrefs() {
   if (theme === 'system') delete root.dataset.theme;
   else root.dataset.theme = theme;
   root.style.setProperty('--page-zoom', state.prefs.textSize ?? 1);
+  sendAccent();
   window.study.setTheme?.(theme); // window chrome, scrollbars and the iPad's Paper follow along
   applySidebar();
   ink?.redraw();
@@ -1721,8 +1722,16 @@ function toast(amount, reason) {
 
 const pet = createPet(document.getElementById('main'), PET_CARE);
 
+// Native controls (the iPad's Paper toolbar) follow the page's accent color.
+function sendAccent() {
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  if (/^#[0-9a-f]{6}$/i.test(c)) window.study.setAccent?.(c);
+}
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => sendAccent());
+
 function applyLooks() {
   document.documentElement.dataset.accent = state.game.equipped.accent.replace('accent-', '');
+  sendAccent();
   pet.set(state.prefs.showPet === false ? null : (shopItem(state.game.equipped.pet)?.sprite ?? null));
 }
 

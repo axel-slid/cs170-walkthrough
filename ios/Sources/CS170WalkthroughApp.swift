@@ -62,7 +62,7 @@ struct StudyLayout: View {
                            height: !wide && study.paperOpen ? geo.size.height * 0.5 : nil)
                 if study.paperOpen && !study.paperKey.isEmpty {
                     Divider().ignoresSafeArea()
-                    PaperPane(key: study.paperKey, label: study.paperLabel, tools: tools, store: store) {
+                    PaperPane(key: study.paperKey, label: study.paperLabel, accent: study.accent, tools: tools, store: store) {
                         study.paperOpen = false
                     }
                 }
