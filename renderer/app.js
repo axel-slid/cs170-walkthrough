@@ -138,24 +138,51 @@ function ringElement(frac, cheer) {
   return wrap;
 }
 
-function renderSidebar() {
-  const picker = el('exam-picker');
-  if (!picker.options.length) {
-    // One section per group (this semester's homework, discussions, past midterms).
-    const groups = new Map();
-    for (const e of exams) {
-      const name = e.group ?? 'Other';
-      if (!groups.has(name)) {
-        const og = document.createElement('optgroup');
-        og.label = name;
-        groups.set(name, og);
-        picker.append(og);
-      }
-      groups.get(name).append(new Option(`${e.term} · ${e.title}`, e.id));
+// How much of a whole exam or worksheet is done (for the rings in the exam menu).
+function examFraction(e) {
+  let done = 0;
+  let total = 0;
+  for (const q of e.questions)
+    for (const p of q.parts) {
+      total += 1;
+      if ((state.progress[`${e.id}:${q.number}.${p.id}`]?.revealed ?? 0) >= p.steps.length) done += 1;
     }
-    picker.onchange = () => switchExam(picker.value);
+  return total ? done / total : 0;
+}
+
+// The exam menu: one row per exam or worksheet, grouped, each with its progress ring.
+function toggleExamMenu(force) {
+  const menu = el('exam-menu');
+  const open = force ?? menu.hidden;
+  menu.hidden = !open;
+  el('exam-btn').classList.toggle('open', open);
+  if (!open) return;
+  menu.replaceChildren();
+  let group = null;
+  for (const e of exams) {
+    const g = e.group ?? 'Other';
+    if (g !== group) {
+      menu.append(node('div', 'exam-group', g));
+      group = g;
+    }
+    const f = examFraction(e);
+    const row = node('button', `exam-row${e.id === exam.id ? ' current' : ''}`);
+    row.setAttribute('role', 'option');
+    row.insertAdjacentHTML('beforeend', ring(f));
+    row.append(node('span', 'exam-name', `${e.term} · ${e.title}`));
+    row.append(node('span', 'exam-pct', f >= 1 ? 'Done' : f > 0 ? `${Math.round(f * 100)}%` : ''));
+    row.onclick = () => {
+      toggleExamMenu(false);
+      if (e.id !== exam.id) switchExam(e.id);
+    };
+    menu.append(row);
   }
-  picker.value = exam.id;
+  menu.querySelector('.current')?.scrollIntoView({ block: 'nearest' });
+}
+
+function renderSidebar() {
+  el('exam-btn-label').textContent = `${exam.term} · ${exam.title}`;
+  el('exam-btn-ring').innerHTML = ring(examFraction(exam));
   el('side-sub').textContent = `${exam.course} · ${exam.instructors}`;
   const nav = el('nav');
   nav.replaceChildren();
@@ -200,7 +227,7 @@ function renderSidebar() {
   const testing = state.view === 'test' && testActive();
   const finished = allParts().filter(({ q, p }) => (testing ? testAnswered(q, p) : isDone(q, p))).length;
   el('overall').innerHTML = `<div class="bar"><div style="width:${(finished / total) * 100}%"></div></div>${finished} of ${total} parts ${testing ? 'answered' : 'done'}`;
-  el('exam-picker').disabled = testActive();
+  el('exam-btn').disabled = testActive();
 }
 
 // ---------- toolbar ----------
@@ -707,7 +734,6 @@ function renderTakeaway(q) {
 
 function switchExam(id) {
   if (testActive()) {
-    el('exam-picker').value = exam.id;
     return toast('Not during a test', 'Submit or quit it first');
   }
   exam = exams.find((e) => e.id === id) ?? exams[0];
@@ -1857,6 +1883,13 @@ el('hints-btn').onclick = toggleHints;
 el('side-btn').onclick = toggleSidebar;
 el('test-btn').onclick = showTest;
 el('settings-btn').onclick = showSettings;
+el('exam-btn').onclick = () => toggleExamMenu();
+document.addEventListener('pointerdown', (e) => {
+  if (!el('exam-menu').hidden && !e.target.closest('#exam-menu, #exam-btn')) toggleExamMenu(false);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !el('exam-menu').hidden) toggleExamMenu(false);
+});
 el('more-btn').onclick = () => toggleMoreMenu();
 document.addEventListener('pointerdown', (e) => {
   if (!el('more-menu').hidden && !e.target.closest('#more-menu, #more-btn')) toggleMoreMenu(false);
