@@ -18,6 +18,14 @@ struct CS170WalkthroughApp: App {
                     .keyboardShortcut("j", modifiers: .command)
                 Button("Ink Palette") { study.send("ink") }
                     .keyboardShortcut("i", modifiers: [.command, .shift])
+                Button("No-Hints Mode") { study.send("hints") }
+                    .keyboardShortcut("h", modifiers: [.command, .shift])
+                Button("Toggle Sidebar") { study.send("sidebar") }
+                    .keyboardShortcut("\\", modifiers: .command)
+                Button("Test Mode") { study.send("test") }
+                    .keyboardShortcut("t", modifiers: [.command, .shift])
+                Button("Settings…") { study.send("settings") }
+                    .keyboardShortcut(",", modifiers: .command)
                 Button(study.paperOpen ? "Hide Paper" : "Show Paper") { study.paperOpen.toggle() }
                     .keyboardShortcut("p", modifiers: [.command, .shift])
                 Button("Start This Part Over") { study.send("reset-part") }
@@ -50,7 +58,7 @@ struct StudyLayout: View {
             layout {
                 StudyWebView(controller: study)
                     .ignoresSafeArea()
-                    .frame(width: wide && study.paperOpen ? geo.size.width * 0.52 : nil,
+                    .frame(width: wide && study.paperOpen ? geo.size.width * 0.58 : nil,
                            height: !wide && study.paperOpen ? geo.size.height * 0.5 : nil)
                 if study.paperOpen && !study.paperKey.isEmpty {
                     Divider().ignoresSafeArea()

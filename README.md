@@ -11,14 +11,37 @@ the document from the menu at the top of the sidebar (grouped by kind):
 - Fall and Spring 2021 Midterm 1, 4 questions each
 - Fall and Spring 2020 Midterm 1, 4 and 8 questions
 
-In total: 13 exams. Some numbered short-answer
+In total: 13 exams, 308 study parts and 521 guided steps. Some numbered short-answer
 subquestions are grouped into one study part when they share a derivation.
 
-Extras: coins for correct answers and a shop (themes, effects, pixel pets that live in the
-corner of the page), canvas effects in `renderer/effects.js`, pets in `renderer/pets.js`, and
-ink in `renderer/ink.js`: write directly on the problem and steps (Apple Pencil on iPad, or
-the Ink palette with a mouse). Strokes are anchored to the card they start on, so they stay
-put when steps are revealed.
+Studying:
+
+- Each part shows the full question, then small steps: a prompt to think about, then the answer
+  in plain words, with a diagram where it helps. Multiple-choice steps grade themselves.
+- Short-answer parts have an answer box; typed answers are checked loosely against the key
+  (spacing, case, n² vs n^2, an optional O(…) wrapper), or you mark yourself right or wrong.
+- No-hints mode (the lightbulb) hides Hint lines and the steps, so you answer first and then check.
+- Staff solution opens the official key's pages; the cheat sheet collects the takeaways.
+- Ink: write directly on the page with the Apple Pencil (or the Ink palette with a mouse).
+  Strokes are anchored to the card they start on, so they stay put when steps are revealed.
+  On iPad there is also a Paper panel for scratch work, one sheet per part.
+
+Test mode (the stopwatch): a timed run through a whole exam or worksheet with no hints, steps,
+keys or cheat sheet. Answers can be picked, typed or handwritten. On submit, Download PDF builds
+a PDF with grading instructions for an AI, every question, the student's answers (handwriting as
+images) and an appendix with the answer key and step-by-step reasoning. Give it to ChatGPT or
+Claude and say "grade this". The PDF is printed by Electron (`printToPDF`) on the Mac and by
+`UIPrintPageRenderer` on the iPad, which then opens the share sheet.
+
+Extras: coins for correct answers and a shop (accent colors, celebration effects, pet food,
+pixel pets that live in the corner of the page and can be dragged; birds fly back down).
+Pets get hungry over about a day and a half and have a hearts bar; tap one to feed it. A daily
+streak pays coins for studying on consecutive days. Settings (the gear, or ⌘,) has the theme
+(System, Light, Dark), text size, and toggles for the sidebar, celebrations and the pet.
+
+Code: `renderer/app.js` (views, test mode, PDF export, shop, settings), `renderer/ink.js`,
+`renderer/pets.js`, `renderer/effects.js`, and the figure builders in `renderer/figures*.js`.
+Narrow windows move the least-used toolbar buttons into a "⋯" menu instead of squeezing them.
 
 ```
 npm start
@@ -119,7 +142,7 @@ Shape of a question:
 
 Text fields may contain inline HTML (`<sup>`, `<sub>`). A part's `key` can also carry a
 `table: { head, rows }`, and `points` can be left off when the exam doesn't list them. Diagrams
-are plain SVG built by the functions in `renderer/figures.js` (shared primitives and Fall 2025),
+are plain SVG built by the functions in `renderer/figures.js` (shared primitives and Fall 2025)
 and `renderer/figures-sp25.js`. Their colors come from CSS classes, so they follow light and
 dark mode.
 

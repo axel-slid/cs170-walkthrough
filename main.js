@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Menu, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeTheme, dialog, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 
@@ -14,6 +14,34 @@ async function readProgress() {
 
 async function writeProgress(data) {
   await fs.writeFile(progressFile(), JSON.stringify(data, null, 2));
+}
+
+// Renders a finished test (HTML built by the page) to a PDF and asks where to save it.
+async function exportPDF(event, html, name) {
+  const tmp = path.join(app.getPath('temp'), `cs170-test-${Date.now()}.html`);
+  await fs.writeFile(tmp, html);
+  const win = new BrowserWindow({ show: false, width: 900, height: 1200, webPreferences: { contextIsolation: true } });
+  try {
+    await win.loadFile(tmp);
+    await new Promise((r) => setTimeout(r, 400)); // let images and fonts settle
+    const pdf = await win.webContents.printToPDF({
+      pageSize: 'Letter',
+      printBackground: true,
+      margins: { top: 0.55, bottom: 0.55, left: 0.6, right: 0.6 }
+    });
+    const parent = BrowserWindow.fromWebContents(event.sender);
+    const { canceled, filePath } = await dialog.showSaveDialog(parent, {
+      defaultPath: path.join(app.getPath('downloads'), name),
+      filters: [{ name: 'PDF', extensions: ['pdf'] }]
+    });
+    if (canceled || !filePath) return { ok: false };
+    await fs.writeFile(filePath, pdf);
+    shell.showItemInFolder(filePath);
+    return { ok: true, path: filePath };
+  } finally {
+    win.destroy();
+    fs.unlink(tmp).catch(() => {});
+  }
 }
 
 function createWindow() {
@@ -37,6 +65,10 @@ function createWindow() {
 app.whenReady().then(() => {
   ipcMain.handle('progress:read', readProgress);
   ipcMain.handle('progress:write', (_event, data) => writeProgress(data));
+  ipcMain.handle('pdf:export', (event, html, name) => exportPDF(event, html, name));
+  ipcMain.handle('theme:set', (_event, theme) => {
+    nativeTheme.themeSource = ['light', 'dark'].includes(theme) ? theme : 'system';
+  });
 
   const template = [
     ...(process.platform === 'darwin' ? [{ role: 'appMenu' }] : []),
@@ -55,7 +87,12 @@ app.whenReady().then(() => {
         { label: 'Previous Part', accelerator: 'CmdOrCtrl+[', click: send('prev-part') },
         { label: 'Cheat Sheet', accelerator: 'CmdOrCtrl+L', click: send('cheatsheet') },
         { label: 'Shop', accelerator: 'CmdOrCtrl+Shift+S', click: send('shop') },
-        { label: 'Ink Palette', accelerator: 'CmdOrCtrl+Shift+I', click: send('ink') }
+        { label: 'Ink Palette', accelerator: 'CmdOrCtrl+Shift+I', click: send('ink') },
+        { label: 'No-Hints Mode', accelerator: 'CmdOrCtrl+Shift+H', click: send('hints') },
+        { label: 'Toggle Sidebar', accelerator: 'CmdOrCtrl+\\', click: send('sidebar') },
+        { label: 'Test Mode', accelerator: 'CmdOrCtrl+Shift+T', click: send('test') },
+        { type: 'separator' },
+        { label: 'Settings…', accelerator: 'CmdOrCtrl+,', click: send('settings') }
       ]
     },
     { role: 'editMenu' },

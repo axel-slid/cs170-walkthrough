@@ -48,6 +48,21 @@ final class PaperTools: ObservableObject {
         }
     }
 
+    /// Wipes the sheet that's showing. Undo brings the writing back.
+    func clearPaper() {
+        guard let canvas = activeCanvas, !canvas.drawing.strokes.isEmpty else { return }
+        setDrawing(PKDrawing(), on: canvas)
+        canvas.undoManager?.setActionName("Clear Paper")
+    }
+
+    private func setDrawing(_ drawing: PKDrawing, on canvas: PKCanvasView) {
+        let old = canvas.drawing
+        canvas.undoManager?.registerUndo(withTarget: canvas) { [weak self] canvas in
+            self?.setDrawing(old, on: canvas)
+        }
+        canvas.drawing = drawing // the delegate saves the change
+    }
+
     func selectColor(_ index: Int) {
         inkColorIndex = index
         isEraser = false
@@ -267,6 +282,7 @@ struct PaperPane: View {
     @ObservedObject var tools: PaperTools
     let store: PaperStore
     let onClose: () -> Void
+    @State private var confirmingClear = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -308,6 +324,16 @@ struct PaperPane: View {
                         .frame(width: 30, height: 30)
                 }
                 .accessibilityLabel("Ink color")
+                Button { confirmingClear = true } label: {
+                    Image(systemName: "trash").frame(width: 30, height: 30)
+                }
+                .accessibilityLabel("Clear paper")
+                .confirmationDialog("Clear all the writing on this page?", isPresented: $confirmingClear, titleVisibility: .visible) {
+                    Button("Clear Paper", role: .destructive) { tools.clearPaper() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("You can bring it back with Undo.")
+                }
                 Button(action: onClose) {
                     Image(systemName: "xmark").frame(width: 30, height: 30)
                 }

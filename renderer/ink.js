@@ -35,10 +35,10 @@ export function createInk({ scroll, host, onChange }) {
   // ---------- geometry ----------
 
   const anchorOf = (target) => {
-    const card = target.closest?.('.problem, .step, .answer, .takeaway, .next-card');
+    const card = target.closest?.('.problem, .step, .attempt, .answer, .takeaway, .next-card');
     if (!card) return { name: 'page', el: scroll.querySelector('.page') };
     if (card.classList.contains('step')) return { name: `step-${card.dataset.index}`, el: card };
-    const name = ['problem', 'answer', 'takeaway', 'next-card'].find((c) => card.classList.contains(c));
+    const name = ['problem', 'attempt', 'answer', 'takeaway', 'next-card'].find((c) => card.classList.contains(c));
     return { name, el: card };
   };
 
@@ -63,7 +63,12 @@ export function createInk({ scroll, host, onChange }) {
 
   // ---------- drawing ----------
 
-  const inkColor = (c) => (c === COLORS[0] && dark.matches ? DARK_INK : c);
+  // Settings can force light or dark; otherwise follow the system.
+  const isDark = () => {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === 'dark' : dark.matches;
+  };
+  const inkColor = (c) => (c === COLORS[0] && isDark() ? DARK_INK : c);
 
   function paint(stroke, ox, oy, scale) {
     const p = stroke.p;
