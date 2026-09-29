@@ -89,6 +89,55 @@ function ring(frac) {
   </svg>`;
 }
 
+// Finishing work animates the sidebar: a question's ring grows to its new amount, and a
+// finished question pops into a green check with a ripple. The sidebar is rebuilt often, so
+// each animation keeps its original start time and simply continues on the new elements.
+const ringSeen = new Map(); // question key -> last fraction shown
+const partSeen = new Map(); // part key -> done?
+const cheers = new Map(); // key -> { from, to, start }
+const CHEER_MS = 1500;
+
+function noteProgress(key, frac, seen) {
+  const prev = seen.get(key);
+  seen.set(key, frac);
+  if (prev !== undefined && frac > prev) cheers.set(key, { from: prev, to: frac, start: document.timeline.currentTime });
+  const c = cheers.get(key);
+  if (c && document.timeline.currentTime - c.start > CHEER_MS) cheers.delete(key);
+  return cheers.get(key);
+}
+
+// Runs a Web Animation that started at `start` (so a rebuilt element picks up mid-way).
+function playFrom(el, frames, opts, start) {
+  const a = el.animate(frames, { fill: 'both', ...opts });
+  a.startTime = start;
+}
+
+function ringElement(frac, cheer) {
+  const r = 7;
+  const c = 2 * Math.PI * r;
+  const wrap = document.createElement('span');
+  wrap.className = 'ring-wrap';
+  if (!cheer) {
+    wrap.innerHTML = ring(frac);
+    return wrap;
+  }
+  // Grow the arc from the old fraction, then (if finished) pop in the check.
+  const done = cheer.to >= 1;
+  wrap.innerHTML = `<svg class="ring" viewBox="0 0 18 18" width="18" height="18">
+    <circle cx="9" cy="9" r="${r}" class="ring-track"/>
+    <circle cx="9" cy="9" r="${r}" class="ring-fill" stroke-dasharray="${(cheer.to * c).toFixed(2)} ${c.toFixed(2)}" transform="rotate(-90 9 9)"/>
+    ${done ? `<circle cx="9" cy="9" r="${r}" class="ring-ripple"/><g class="ring-done-g"><circle cx="9" cy="9" r="${r}" class="ring-disc"/><path d="M5.6,9.2 L8,11.4 L12.4,6.8" class="ring-check"/></g>` : ''}
+  </svg>`;
+  const $ = (sel) => wrap.querySelector(sel);
+  playFrom($('.ring-fill'), [{ strokeDasharray: `${(cheer.from * c).toFixed(2)} ${c.toFixed(2)}` }, { strokeDasharray: `${(cheer.to * c).toFixed(2)} ${c.toFixed(2)}` }], { duration: 650, easing: 'cubic-bezier(.3,.8,.3,1)' }, cheer.start);
+  if (done) {
+    playFrom($('.ring-done-g'), [{ transform: 'scale(0.2)', opacity: 0 }, { transform: 'scale(1.3)', opacity: 1, offset: 0.6 }, { transform: 'scale(1)', opacity: 1 }], { duration: 450, delay: 600, easing: 'ease-out' }, cheer.start);
+    playFrom($('.ring-check'), [{ strokeDashoffset: 12 }, { strokeDashoffset: 0 }], { duration: 300, delay: 850, easing: 'ease-out' }, cheer.start);
+    playFrom($('.ring-ripple'), [{ transform: 'scale(1)', opacity: 0.9 }, { transform: 'scale(2.6)', opacity: 0 }], { duration: 750, delay: 650, easing: 'ease-out' }, cheer.start);
+  }
+  return wrap;
+}
+
 function renderSidebar() {
   const picker = el('exam-picker');
   if (!picker.options.length) {
@@ -118,7 +167,8 @@ function renderSidebar() {
 
     const row = node('button', 'q-row');
     if (selected) row.classList.add('open');
-    row.innerHTML = ring(done / q.parts.length);
+    const qCheer = noteProgress(`${exam.id}:${q.number}`, done / q.parts.length, ringSeen);
+    row.append(ringElement(done / q.parts.length, qCheer));
     row.append(node('span', 'q-num', String(q.number)));
     row.append(node('span', 'q-name', q.title));
     row.append(node('span', 'q-pts', `${q.points ?? ""}`));
@@ -131,7 +181,10 @@ function renderSidebar() {
         const pr = node('button', 'p-row');
         if (p.id === state.partId) pr.classList.add('selected');
         if (doneFn(q, p)) pr.classList.add('done');
-        pr.append(node('span', 'p-dot'));
+        const dot = node('span', 'p-dot');
+        const pCheer = noteProgress(`${exam.id}:${q.number}.${p.id}`, doneFn(q, p) ? 1 : 0, partSeen);
+        if (pCheer) playFrom(dot, [{ transform: 'scale(1)' }, { transform: 'scale(2.1)', offset: 0.4 }, { transform: 'scale(1)' }], { duration: 550, easing: 'ease-out' }, pCheer.start);
+        pr.append(dot);
         pr.append(node('span', 'p-id', partLabel(p)));
         pr.append(rich('span', 'p-name', p.name));
         pr.onclick = () => go(q.number, p.id);

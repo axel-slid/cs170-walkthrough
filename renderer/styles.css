@@ -1216,3 +1216,11 @@ textarea.test-text:focus { outline: none; border-color: var(--accent); box-shado
   .ios #pet .pet-body svg { width: 48px; height: 48px; }
   .ios #pet .pet-bars { width: 36px; }
 }
+
+/* Finishing animation for the sidebar rings (see ringElement in app.js). */
+.ring-wrap { display: inline-flex; flex: none; }
+.ring { overflow: visible; }
+.ring-disc { fill: var(--good); }
+.ring-done-g, .ring-ripple { transform-box: fill-box; transform-origin: center; }
+.ring-done-g .ring-check { stroke-dasharray: 12; }
+.ring-ripple { fill: none; stroke: var(--good); stroke-width: 2; opacity: 0; }
