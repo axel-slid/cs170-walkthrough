@@ -26,7 +26,7 @@ const rich = (tag, cls, html) => {
 let exam = exams[0];
 
 const state = {
-  view: 'part', // 'part' | 'cheatsheet' | 'shop'
+  view: 'part', // 'part' | 'shop' | 'settings' | 'test-start' | 'test' | 'test-results'
   solutionOpen: false, // staff solution panel
   questionNumber: exam.questions[0].number,
   partId: exam.questions[0].parts[0].id,
@@ -141,7 +141,6 @@ function renderSidebar() {
     }
   }
 
-  el('cheat-btn').classList.toggle('selected', state.view === 'cheatsheet');
   el('shop-btn').classList.toggle('selected', state.view === 'shop');
   el('settings-btn').classList.toggle('selected', state.view === 'settings');
   const total = allParts().length;
@@ -149,18 +148,16 @@ function renderSidebar() {
   const finished = allParts().filter(({ q, p }) => (testing ? testAnswered(q, p) : isDone(q, p))).length;
   el('overall').innerHTML = `<div class="bar"><div style="width:${(finished / total) * 100}%"></div></div>${finished} of ${total} parts ${testing ? 'answered' : 'done'}`;
   el('exam-picker').disabled = testActive();
-  el('cheat-btn').disabled = testActive();
 }
 
 // ---------- toolbar ----------
 
 function renderToolbar() {
-  const cheat = state.view !== 'part';
+  const offPage = state.view !== 'part'; // shop, settings, tests
   const testing = state.view === 'test' && testActive();
   el('tb-title').hidden = true; // the page says which question it is, above the question
   el('tb-title').textContent =
-    state.view === 'cheatsheet' ? 'Cheat sheet'
-    : state.view === 'shop' ? 'Shop'
+    state.view === 'shop' ? 'Shop'
     : state.view === 'settings' ? 'Settings'
     : state.view === 'test-start' ? 'Test mode'
     : state.view === 'test-results' ? 'Test submitted'
@@ -168,21 +165,21 @@ function renderToolbar() {
     : `Question ${question().number} ${partLabel(part())}`;
   renderCoins();
   const i = partIndex();
-  el('prev-btn').disabled = (cheat && !testing) || i <= 0;
-  el('next-btn').disabled = (cheat && !testing) || i >= allParts().length - 1;
+  el('prev-btn').disabled = (offPage && !testing) || i <= 0;
+  el('next-btn').disabled = (offPage && !testing) || i >= allParts().length - 1;
   el('test-btn').classList.toggle('on', state.view.startsWith('test'));
   el('test-btn').hidden = testing;
   el('test-submit').hidden = !testActive();
   tickTest();
   requestAnimationFrame(fitToolbar);
-  el('all-btn').hidden = cheat;
-  el('solution-btn').hidden = cheat || !exam.solutionPages?.[question().number];
-  el('ink-btn').hidden = cheat && !testing;
-  el('hints-btn').hidden = cheat;
+  el('all-btn').hidden = offPage;
+  el('solution-btn').hidden = offPage || !exam.solutionPages?.[question().number];
+  el('ink-btn').hidden = offPage && !testing;
+  el('hints-btn').hidden = offPage;
   el('hints-btn').classList.toggle('on', state.prefs.noHints);
   el('ink-btn').classList.toggle('on', !!ink?.open);
   el('solution-btn').classList.toggle('on', !!state.solutionOpen);
-  el('reset-btn').hidden = cheat;
+  el('reset-btn').hidden = offPage;
 }
 
 // When the window is narrow (iPad landscape with Paper open, split view…) the least-used
@@ -242,7 +239,6 @@ function toggleMoreMenu(force) {
 // ---------- page ----------
 
 function renderPage() {
-  if (state.view === 'cheatsheet') return renderCheatsheet();
   if (state.view === 'shop') return renderShop();
   if (state.view === 'settings') return renderSettings();
   if (state.view.startsWith('test')) {
@@ -658,36 +654,6 @@ function renderTakeaway(q) {
   return box;
 }
 
-function renderCheatsheet() {
-  const page = el('page');
-  page.replaceChildren();
-  page.append(node('div', 'eyebrow', `${exam.course} · ${exam.term} ${exam.title}`));
-  page.append(node('h1', null, 'Cheat sheet'));
-  page.append(node('p', 'lede', 'Every answer and every “remember this” on one page. Click a row to jump to its walkthrough.'));
-
-  for (const q of exam.questions) {
-    const sec = node('section', 'card cheat');
-    sec.append(node('h2', null, `${q.number}. ${q.title}`));
-    for (const p of q.parts) {
-      const row = node('button', 'cheat-row');
-      row.append(node('span', 'p-id', partLabel(p)));
-      const txt = node('span', 'cheat-text');
-      txt.append(rich('span', 'cheat-name', p.name));
-      txt.append(rich('span', 'cheat-gist', p.key.gist));
-      row.append(txt);
-      row.onclick = () => go(q.number, p.id);
-      sec.append(row);
-    }
-    if (q.takeaway) {
-      const ul = node('ul', 'cheat-take');
-      for (const line of q.takeaway) ul.append(rich('li', null, line));
-      sec.append(ul);
-    }
-    page.append(sec);
-  }
-  el('st-progress').textContent = 'Cheat sheet';
-}
-
 // ---------- commands ----------
 
 function switchExam(id) {
@@ -775,13 +741,6 @@ function showShop() {
   renderAll();
 }
 
-function showCheatsheet() {
-  if (testActive()) return toast('Not during a test', 'Submit first');
-  state.view = state.view === 'cheatsheet' ? 'part' : 'cheatsheet';
-  state.solutionOpen = false;
-  renderAll();
-}
-
 // ---------- staff solution ----------
 
 // Shows the official key's pages for the current question over the walkthrough.
@@ -817,7 +776,7 @@ function toggleSolution(open = !state.solutionOpen) {
 
 // ---------- test mode ----------
 // A timed run through the whole document with nothing to lean on: no steps, hints, answer
-// key, staff solution or cheat sheet until you submit. Multiple choice and short answers that
+// key or staff solution until you submit. Multiple choice and short answers that
 // match the key grade themselves; you grade the rest against the key, or export a PDF with
 // grading instructions for an AI.
 
@@ -951,7 +910,7 @@ function renderTestStart(page) {
   rules.append(node('div', 'card-label', 'How it works'));
   const ul = node('ul', 'test-rules');
   for (const line of [
-    'No hints, steps, answer key, staff solution or cheat sheet until you submit.',
+    'No hints, steps, answer key or staff solution until you submit.',
     'Pick an answer, type it, or write it with the Pencil (or the Ink tool). Work in any order.',
     'When you submit, download a PDF of your test and give it to ChatGPT or Claude. It grades every part, with partial credit.'
   ]) ul.append(node('li', null, line));
@@ -1847,7 +1806,6 @@ el('prev-btn').onclick = () => step(-1);
 el('next-btn').onclick = () => step(1);
 el('all-btn').onclick = revealAll;
 el('reset-btn').onclick = resetPart;
-el('cheat-btn').onclick = showCheatsheet;
 el('shop-btn').onclick = showShop;
 el('coin-btn').onclick = showShop;
 el('solution-btn').onclick = () => toggleSolution();
@@ -1886,7 +1844,6 @@ window.study.onCommand((cmd) => {
   if (cmd === 'reset-part') resetPart();
   if (cmd === 'next-part') step(1);
   if (cmd === 'prev-part') step(-1);
-  if (cmd === 'cheatsheet') showCheatsheet();
   if (cmd === 'solution') toggleSolution();
   if (cmd === 'shop') showShop();
   if (cmd === 'ink') el('ink-btn').click();

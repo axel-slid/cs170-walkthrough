@@ -85,7 +85,6 @@ app.whenReady().then(() => {
         { type: 'separator' },
         { label: 'Next Part', accelerator: 'CmdOrCtrl+]', click: send('next-part') },
         { label: 'Previous Part', accelerator: 'CmdOrCtrl+[', click: send('prev-part') },
-        { label: 'Cheat Sheet', accelerator: 'CmdOrCtrl+L', click: send('cheatsheet') },
         { label: 'Shop', accelerator: 'CmdOrCtrl+Shift+S', click: send('shop') },
         { label: 'Ink Palette', accelerator: 'CmdOrCtrl+Shift+I', click: send('ink') },
         { label: 'No-Hints Mode', accelerator: 'CmdOrCtrl+Shift+H', click: send('hints') },

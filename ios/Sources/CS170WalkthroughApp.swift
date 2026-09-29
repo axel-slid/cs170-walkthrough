@@ -35,8 +35,6 @@ struct CS170WalkthroughApp: App {
                     .keyboardShortcut("]", modifiers: .command)
                 Button("Previous Part") { study.send("prev-part") }
                     .keyboardShortcut("[", modifiers: .command)
-                Button("Cheat Sheet") { study.send("cheatsheet") }
-                    .keyboardShortcut("l", modifiers: .command)
                 Button("Shop") { study.send("shop") }
                     .keyboardShortcut("s", modifiers: [.command, .shift])
             }

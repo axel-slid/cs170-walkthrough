@@ -13,7 +13,6 @@ contextBridge.exposeInMainWorld('study', {
       'reset-part',
       'next-part',
       'prev-part',
-      'cheatsheet',
       'solution',
       'shop',
       'ink',
