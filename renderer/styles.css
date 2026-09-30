@@ -116,7 +116,7 @@ body {
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   display: grid;
-  grid-template-columns: 272px 1fr;
+  grid-template-columns: var(--side-w, 272px) 1fr;
 }
 
 button { font: inherit; color: inherit; }
@@ -931,7 +931,7 @@ textarea.scratch::placeholder { color: var(--text-faint); }
 .tb-btn, #toolbar .title { white-space: nowrap; }
 .tb-btn .short { display: none; }
 @media (max-width: 1000px) {
-  body { grid-template-columns: 244px 1fr; }
+  body { grid-template-columns: var(--side-w, 244px) 1fr; }
   .tb-btn .long { display: none; }
   .tb-btn .short { display: inline; }
   .page { padding: 0 24px; }
@@ -960,7 +960,7 @@ textarea.scratch::placeholder { color: var(--text-faint); }
 /* Paper beside the page (landscape): keep the question list, just slimmer. It can still be
    hidden with the sidebar button. */
 @media (max-width: 760px) {
-  .ios body { grid-template-columns: 212px 1fr; }
+  .ios body { grid-template-columns: var(--side-w, 212px) 1fr; }
   .ios .page { padding: 0 16px; }
   .ios .side-head { padding: 0 10px 10px; }
   .ios .side-foot { padding-left: 10px; padding-right: 10px; }
@@ -1204,7 +1204,7 @@ textarea.test-text:focus { outline: none; border-color: var(--accent); box-shado
 .pet-fire { width: 6px; height: 6px; border-radius: 1px; }
 .test-answer .attempt-input { width: 100%; }
 @media (max-width: 760px) {
-  .ios body { grid-template-columns: 224px 1fr; }
+  .ios body { grid-template-columns: var(--side-w, 224px) 1fr; }
   .ios .side-links { gap: 4px; }
   .ios .side-links .side-link { font-size: 13px; padding-left: 6px; padding-right: 6px; }
   .ios .side-links .side-link.gear { flex: 0 0 34px; }
@@ -1270,3 +1270,21 @@ textarea.test-text:focus { outline: none; border-color: var(--accent); box-shado
 /* Long equations may wrap after = + − (KaTeX splits them into pieces). */
 .problem .math .tex .katex, .formal .tex .katex { font-size: 1.14em; }
 .choice .tex .katex { font-size: 1.05em; }
+
+/* ---------- Resizable sidebar ---------- */
+#sidebar { position: relative; }
+#side-resize {
+  position: absolute; top: 0; bottom: 0; right: -6px; width: 12px; z-index: 20;
+  cursor: col-resize; touch-action: none; -webkit-app-region: no-drag;
+}
+#side-resize::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: 5px; width: 2px; background: transparent; transition: background 0.15s;
+}
+#side-resize:hover::after, html.resizing #side-resize::after { background: var(--accent); }
+html.resizing, html.resizing * { cursor: col-resize !important; -webkit-user-select: none !important; user-select: none !important; }
+.ios #side-resize { right: -10px; width: 20px; }
+.ios #side-resize::before {
+  content: ''; position: absolute; top: 50%; left: 8px; width: 4px; height: 36px; margin-top: -18px; border-radius: 2px; background: var(--text-faint); opacity: 0.6;
+}
+html.sidebar-hidden #side-resize { display: none; }
+#ink-palette { max-width: calc(100% - 28px); flex-wrap: wrap; justify-content: flex-end; }

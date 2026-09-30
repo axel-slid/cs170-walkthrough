@@ -6,9 +6,13 @@ import UIKit
 // The canvas, tool handling, and storage are adapted from ~/cs170-study's PencilPageView and
 // StudyModels, which were tested on this iPad (squeeze/double-tap, dark-mode ink, zoom).
 
-/// Pen/eraser and ink color, shared by whichever sheet is showing.
+/// Pen, highlighter or eraser and the ink color: one pencil for the Paper and for writing on
+/// the page. `onChange` tells the page when the Paper's toolbar (or a Pencil double-tap on the
+/// Paper) changes it; `sync` takes changes the other way without echoing them back.
 final class PaperTools: ObservableObject {
     @Published var isEraser = false
+    @Published var isHighlighter = false
+    var onChange: ((String, Int) -> Void)?
     @Published private(set) var isSqueezing = false
     @Published var inkColorIndex = 0
     weak var activeCanvas: PKCanvasView?
@@ -24,14 +28,37 @@ final class PaperTools: ObservableObject {
     let colorNames = ["Black", "Blue", "Red", "Green", "Purple", "Orange"]
 
     var isUsingEraser: Bool { isEraser || isSqueezing }
+    /// The highlighter's yellow, the same as the page's (renderer/ink.js).
+    let highlightColor = UIColor(red: 0.98, green: 0.80, blue: 0.08, alpha: 1)
+
     var currentTool: PKTool {
         if isUsingEraser { return PKEraserTool(.vector) }
+        if isHighlighter { return PKInkingTool(.marker, color: highlightColor, width: 18) }
         return PKInkingTool(.pen, color: inkColors[inkColorIndex], width: 3)
     }
+
+    var toolName: String { isEraser ? "eraser" : isHighlighter ? "highlighter" : "pen" }
 
     func toggleEraser() {
         isSqueezing = false
         isEraser.toggle()
+        if isEraser { isHighlighter = false }
+        applyTool()
+        onChange?(toolName, inkColorIndex)
+    }
+
+    func toggleHighlighter() {
+        isHighlighter.toggle()
+        isEraser = false
+        applyTool()
+        onChange?(toolName, inkColorIndex)
+    }
+
+    /// A change made on the page.
+    func sync(tool: String, color: Int) {
+        inkColorIndex = max(0, min(inkColors.count - 1, color))
+        isEraser = tool == "eraser"
+        isHighlighter = tool == "highlighter"
         applyTool()
     }
 
@@ -68,7 +95,9 @@ final class PaperTools: ObservableObject {
     func selectColor(_ index: Int) {
         inkColorIndex = index
         isEraser = false
+        isHighlighter = false
         applyTool()
+        onChange?(toolName, inkColorIndex)
     }
 
     private func applyTool() {
@@ -301,11 +330,18 @@ struct PaperPane: View {
             HStack(spacing: 10) {
                 Text("Paper").font(.headline)
                 Spacer(minLength: 8)
-                Button { tools.toggleEraser() } label: {
-                    Image(systemName: tools.isUsingEraser ? "eraser.fill" : "pencil.tip")
+                Button { tools.toggleHighlighter() } label: {
+                    Image(systemName: "highlighter")
                         .frame(width: 30, height: 30)
+                        .background(tools.isHighlighter ? accent.opacity(0.18) : .clear, in: RoundedRectangle(cornerRadius: 7))
                 }
-                .accessibilityLabel(tools.isUsingEraser ? "Switch to pen" : "Switch to eraser")
+                .accessibilityLabel(tools.isHighlighter ? "Back to the pen" : "Highlighter")
+                Button { tools.toggleEraser() } label: {
+                    Image(systemName: tools.isUsingEraser ? "eraser.fill" : "eraser")
+                        .frame(width: 30, height: 30)
+                        .background(tools.isUsingEraser ? accent.opacity(0.18) : .clear, in: RoundedRectangle(cornerRadius: 7))
+                }
+                .accessibilityLabel(tools.isUsingEraser ? "Back to the pen" : "Eraser")
                 Button { tools.activeCanvas?.undoManager?.undo() } label: {
                     Image(systemName: "arrow.uturn.backward").frame(width: 30, height: 30)
                 }
@@ -317,7 +353,7 @@ struct PaperPane: View {
                 // Ink colors as dots: tap one to write in it.
                 HStack(spacing: 7) {
                     ForEach(tools.inkColors.indices, id: \.self) { index in
-                        let on = !tools.isUsingEraser && tools.inkColorIndex == index
+                        let on = !tools.isUsingEraser && !tools.isHighlighter && tools.inkColorIndex == index
                         Button { tools.selectColor(index) } label: {
                             Circle()
                                 // Black ink shows as white on dark paper, so match what's on screen.

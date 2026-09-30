@@ -8,10 +8,13 @@
 // Drawing: one viewport-sized canvas over the scroll area, redrawn on scroll, so long pages
 // never need a giant bitmap.
 
-const COLORS = ['#1f2937', '#2563eb', '#dc2626', '#16a34a', '#9333ea'];
+// The same six inks as the iPad's Paper (ios/Sources/Paper.swift), in the same order: picking a
+// color, the highlighter or the eraser in either place picks it in both.
+const COLORS = ['#1f2937', '#2663eb', '#db2626', '#17a34a', '#9433eb', '#eb7514'];
+const HIGHLIGHT = '#facc15';
 const DARK_INK = '#e5e7eb'; // "black" ink is drawn light in dark mode
 
-export function createInk({ scroll, host, onChange }) {
+export function createInk({ scroll, host, onChange, onTool }) {
   const canvas = document.createElement('canvas');
   canvas.id = 'ink-canvas';
   host.append(canvas);
@@ -25,6 +28,7 @@ export function createInk({ scroll, host, onChange }) {
   let strokes = [];        // strokes for the current part
   let history = [];        // undo stack: {type:'add', stroke} | {type:'erase', removed:[...]}
   let tool = 'pen';        // 'pen' | 'highlighter' | 'eraser'
+  let colorIndex = 0;
   let color = COLORS[0];
   let squeezing = false;
   let open = false;        // palette open (and, on a Mac, mouse drawing on)
@@ -263,12 +267,12 @@ export function createInk({ scroll, host, onChange }) {
       palette.append(b);
       return b;
     };
-    for (const c of COLORS) {
-      const b = btn('', 'Ink color', tool === 'pen' && color === c, () => { tool = 'pen'; color = c; renderPalette(); }, 'swatch');
-      b.style.setProperty('--swatch', c === COLORS[0] ? 'var(--text)' : c);
-    }
-    btn('<span class="hl"></span>', 'Highlighter', tool === 'highlighter', () => { tool = 'highlighter'; color = '#facc15'; renderPalette(); });
-    btn('Eraser', 'Eraser (Pencil: double-tap, or squeeze and hold)', tool === 'eraser', () => { tool = tool === 'eraser' ? 'pen' : 'eraser'; renderPalette(); });
+    COLORS.forEach((c, i) => {
+      const b = btn('', 'Ink color', tool === 'pen' && colorIndex === i, () => setTool('pen', i), 'swatch');
+      b.style.setProperty('--swatch', i === 0 ? 'var(--text)' : c);
+    });
+    btn('<span class="hl"></span>', 'Highlighter', tool === 'highlighter', () => setTool(tool === 'highlighter' ? 'pen' : 'highlighter', colorIndex));
+    btn('Eraser', 'Eraser (Pencil: double-tap, or squeeze and hold)', tool === 'eraser', () => setTool(tool === 'eraser' ? 'pen' : 'eraser', colorIndex));
     btn('Undo', 'Undo', false, undo);
     btn('Clear', 'Clear all ink on this part', false, () => {
       if (!strokes.length) return;
@@ -277,6 +281,15 @@ export function createInk({ scroll, host, onChange }) {
       onChange(strokes);
       redraw();
     });
+  }
+
+  // Change the tool; tell the other writing surface unless the change came from it.
+  function setTool(next, index, quiet = false) {
+    tool = next;
+    colorIndex = Math.max(0, Math.min(COLORS.length - 1, index ?? colorIndex));
+    color = tool === 'highlighter' ? HIGHLIGHT : COLORS[colorIndex];
+    renderPalette();
+    if (!quiet) onTool?.({ tool, color: colorIndex });
   }
 
   function undo() {
@@ -307,8 +320,9 @@ export function createInk({ scroll, host, onChange }) {
     },
     get open() { return open; },
     // Apple Pencil gestures forwarded from the native app.
-    pencil(action) {
-      if (action === 'toggle-eraser') tool = tool === 'eraser' ? 'pen' : 'eraser';
+    pencil(action, data) {
+      if (action === 'toggle-eraser') return setTool(tool === 'eraser' ? 'pen' : 'eraser');
+      if (action === 'sync') return setTool(data.tool, data.color, true); // from the Paper
       if (action === 'squeeze-on') squeezing = true;
       if (action === 'squeeze-off') squeezing = false;
       renderPalette();

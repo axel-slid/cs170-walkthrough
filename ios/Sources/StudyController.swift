@@ -8,6 +8,16 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
 
     lazy var webView: WKWebView = makeWebView()
 
+    /// One pencil for the Paper and the page (see PaperTools).
+    let tools = PaperTools()
+
+    override init() {
+        super.init()
+        tools.onChange = { [weak self] tool, color in
+            self?.webView.evaluateJavaScript("window.__ink && window.__ink('sync', { tool: '\(tool)', color: \(color) })")
+        }
+    }
+
     /// Scratch paper for the part the page is showing (see Paper.swift).
     @Published var paperOpen = false {
         didSet {
@@ -59,6 +69,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
           setTheme: (theme) => window.webkit.messageHandlers.theme.postMessage(theme),
           setAccent: (color) => window.webkit.messageHandlers.accent.postMessage(color),
           petToPaper: (json) => window.webkit.messageHandlers.pet.postMessage(json),
+          setPencil: (t) => window.webkit.messageHandlers.pencil.postMessage(t),
           exportPDF: (html, name) => new Promise((resolve) => {
             window.__pdfDone = resolve;
             window.webkit.messageHandlers.pdf.postMessage({ html, name });
@@ -77,6 +88,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
         controller.add(WeakMessageHandler(self), name: "theme")
         controller.add(WeakMessageHandler(self), name: "accent")
         controller.add(WeakMessageHandler(self), name: "pet")
+        controller.add(WeakMessageHandler(self), name: "pencil")
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
@@ -156,6 +168,9 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
                 if CommandLine.arguments.contains("--open-paper"), !paperOpen { paperOpen = true }
                 #endif
             }
+        case "pencil":
+            guard let body = message.body as? [String: Any], let tool = body["tool"] as? String else { return }
+            tools.sync(tool: tool, color: (body["color"] as? Int) ?? tools.inkColorIndex)
         case "pet":
             guard let json = message.body as? String else { return }
             paperPet = json == "null" ? nil : try? JSONDecoder().decode(PaperPetData.self, from: Data(json.utf8))

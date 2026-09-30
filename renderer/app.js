@@ -1375,6 +1375,8 @@ function applyPrefs() {
   if (theme === 'system') delete root.dataset.theme;
   else root.dataset.theme = theme;
   root.style.setProperty('--page-zoom', state.prefs.textSize ?? 1);
+  if (state.prefs.sideWidth) root.style.setProperty('--side-w', `${state.prefs.sideWidth}px`);
+  else root.style.removeProperty('--side-w');
   sendAccent();
   window.study.setTheme?.(theme); // window chrome, scrollbars and the iPad's Paper follow along
   applySidebar();
@@ -1872,6 +1874,8 @@ let ink = null;
 ink = createInk({
   scroll: el('scroll'),
   host: el('main'),
+  // One pencil: the tool picked here is the tool on the iPad's Paper, and back.
+  onTool: (t) => window.study.setPencil?.(t),
   onChange: (strokes) => {
     if (state.view === 'test' && testActive()) {
       state.ink[testInkKey(question(), part())] = strokes;
@@ -1884,7 +1888,7 @@ ink = createInk({
     save();
   }
 });
-window.__ink = (action) => ink.pencil(action);
+window.__ink = (action, data) => ink.pencil(action, data);
 setInterval(checkPetDeath, 60000);
 
 function renderAll() {
@@ -1907,6 +1911,38 @@ el('solution-btn').onclick = () => toggleSolution();
 el('hints-btn').onclick = toggleHints;
 el('side-btn').onclick = toggleSidebar;
 el('test-btn').onclick = showTest;
+
+// Drag the sidebar's edge (finger or mouse) to resize it; double-click/tap to reset.
+{
+  const handle = el('side-resize');
+  handle.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'pen') return; // the Pencil writes; fingers and the mouse resize
+    e.preventDefault();
+    try { handle.setPointerCapture(e.pointerId); } catch {}
+    document.documentElement.classList.add('resizing');
+    const move = (ev) => {
+      const w = Math.round(Math.max(170, Math.min(460, ev.clientX)));
+      state.prefs.sideWidth = w;
+      document.documentElement.style.setProperty('--side-w', `${w}px`);
+    };
+    const up = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+      handle.removeEventListener('pointercancel', up);
+      document.documentElement.classList.remove('resizing');
+      save();
+      ink?.redraw();
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+    handle.addEventListener('pointercancel', up);
+  });
+  handle.addEventListener('dblclick', () => {
+    delete state.prefs.sideWidth;
+    applyPrefs();
+    save();
+  });
+}
 el('settings-btn').onclick = showSettings;
 el('exam-btn').onclick = () => toggleExamMenu();
 document.addEventListener('pointerdown', (e) => {
