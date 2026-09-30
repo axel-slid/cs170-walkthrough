@@ -2,6 +2,7 @@ import { exams } from '../content/index.js';
 import * as fx from './effects.js';
 import { createPet, spriteSVG, foodSVG, tombSVG } from './pets.js';
 import { createInk } from './ink.js';
+import { mathify, mathifyHTML } from './mathify.js';
 
 const el = (id) => document.getElementById(id);
 const node = (tag, cls, text) => {
@@ -328,6 +329,7 @@ function renderPage() {
     if (state.view === 'test' && testActive()) renderTestPart(page);
     else if (state.view === 'test-results' && state.test?.submitted && state.test.examId === exam.id) renderTestResults(page);
     else renderTestStart(page);
+    typeset(page);
     ink?.redraw();
     return;
   }
@@ -370,7 +372,13 @@ function renderPage() {
     }
   }
 
+  typeset(page);
   ink?.redraw(); // cards may have moved
+}
+
+// LaTeX-style math (KaTeX) in the question, steps, answers and answer boxes.
+function typeset(page) {
+  for (const c of page.querySelectorAll('.problem, .step, .answer, .takeaway, .attempt, .result-row')) mathify(c);
 }
 
 // ---------- answering without the walkthrough ----------
@@ -1232,7 +1240,7 @@ function buildTestPDF() {
 
   let html = `<!doctype html><html class="print"><head><meta charset="utf-8"><base href="${new URL('.', location.href).href}">
 <title>${esc(`${exam.course} ${exam.term} ${exam.title} test`)}</title>
-<link rel="stylesheet" href="styles.css"><style>${lightThemeCSS()}${PDF_CSS}</style></head><body class="pdf">`;
+<link rel="stylesheet" href="vendor/katex/katex.min.css"><link rel="stylesheet" href="styles.css"><style>${lightThemeCSS()}${PDF_CSS}</style></head><body class="pdf">`;
 
   html += `<section class="pdf-cover">
 <div class="pdf-howto"><b>To get this graded:</b> give this PDF to ChatGPT or Claude (drag it into a new chat) and say “grade this”. Everything below is written for the AI.</div>
@@ -1257,7 +1265,9 @@ function buildTestPDF() {
     html += `<section class="pdf-part"><h2>Question ${q.number} ${esc(partLabel(p))} <span>${esc(outOf(p))}</span></h2>`;
     // The question, with any marks the student made on it drawn on top.
     const probStrokes = hand.filter((s) => s.a === 'problem');
-    const probHTML = buildProblem(q, p, true).outerHTML;
+    const probEl = buildProblem(q, p, true);
+    mathify(probEl);
+    const probHTML = probEl.outerHTML;
     if (probStrokes.length) {
       const w = probStrokes[0].w;
       html += `<div class="pdf-fit" style="width:${w}px;zoom:${(PDF_WIDTH / w).toFixed(4)}"><div class="pdf-overlay">${probHTML}${inkSVG(probStrokes, 1e9, { crop: false }).replace('<svg class="ink-svg"', '<svg class="ink-svg ink-over"')}</div></div>`;
@@ -1267,7 +1277,7 @@ function buildTestPDF() {
     let any = false;
     if (kind === 'choice') {
       const st = p.steps[choiceStep(p)];
-      html += `<ul class="pdf-choices">${st.choices.map((c, i) => `<li class="${a.pick === i ? 'on' : ''}">${a.pick === i ? '☒' : '☐'} ${c}</li>`).join('')}</ul>`;
+      html += `<ul class="pdf-choices">${st.choices.map((c, i) => `<li class="${a.pick === i ? 'on' : ''}">${a.pick === i ? '☒' : '☐'} ${mathifyHTML(c)}</li>`).join('')}</ul>`;
       any = a.pick !== undefined;
     }
     if (a.text?.trim()) {
@@ -1285,11 +1295,11 @@ function buildTestPDF() {
 
   html += '<section class="pdf-key"><h1>Appendix: reference solutions (for the grader)</h1>';
   for (const { q, p } of allParts()) {
-    html += `<div class="pdf-key-part"><h3>Question ${q.number} ${esc(partLabel(p))} · ${p.name} <span>${esc(outOf(p))}</span></h3><div class="pdf-gist">${p.key.gist}</div>`;
-    for (const para of p.key.body ?? []) html += `<div>${para}</div>`;
+    html += `<div class="pdf-key-part"><h3>Question ${q.number} ${esc(partLabel(p))} · ${p.name} <span>${esc(outOf(p))}</span></h3><div class="pdf-gist">${mathifyHTML(p.key.gist)}</div>`;
+    for (const para of p.key.body ?? []) html += `<div>${mathifyHTML(para)}</div>`;
     if (p.key.runtime) html += `<div>Runtime: ${p.key.runtime}</div>`;
     // The walkthrough's reasoning, so the grader can judge partial work.
-    html += `<ol class="pdf-steps">${p.steps.map((st) => `<li><b>${st.title}.</b> ${st.simple}</li>`).join('')}</ol>`;
+    html += `<ol class="pdf-steps">${p.steps.map((st) => `<li><b>${st.title}.</b> ${mathifyHTML(st.simple)}</li>`).join('')}</ol>`;
     html += '</div>';
   }
   html += '</section></body></html>';

@@ -1264,3 +1264,9 @@ textarea.test-text:focus { outline: none; border-color: var(--accent); box-shado
    and focus can never shift the page panel and push the toolbar off screen. (clip, unlike
    hidden, isn't a scroll container, so the grid needs the explicit zero minimums.) */
 #main { overflow: clip; min-width: 0; min-height: 0; }
+
+/* ---------- Math (KaTeX) ---------- */
+.tex .katex { font-size: 1.1em; }
+/* Long equations may wrap after = + − (KaTeX splits them into pieces). */
+.problem .math .tex .katex, .formal .tex .katex { font-size: 1.14em; }
+.choice .tex .katex { font-size: 1.05em; }

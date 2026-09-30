@@ -286,7 +286,8 @@ private final class BundleSchemeHandler: NSObject, WKURLSchemeHandler {
     private static let types = [
         "html": "text/html", "js": "text/javascript", "css": "text/css",
         "json": "application/json", "svg": "image/svg+xml", "png": "image/png",
-        "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp"
+        "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp",
+        "mjs": "text/javascript", "woff2": "font/woff2"
     ]
 
     func webView(_ webView: WKWebView, start task: WKURLSchemeTask) {
