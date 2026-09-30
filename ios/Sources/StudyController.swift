@@ -70,6 +70,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
           setAccent: (color) => window.webkit.messageHandlers.accent.postMessage(color),
           petToPaper: (json) => window.webkit.messageHandlers.pet.postMessage(json),
           setPencil: (t) => window.webkit.messageHandlers.pencil.postMessage(t),
+          effect: (name) => window.webkit.messageHandlers.effect.postMessage(name),
           exportPDF: (html, name) => new Promise((resolve) => {
             window.__pdfDone = resolve;
             window.webkit.messageHandlers.pdf.postMessage({ html, name });
@@ -89,6 +90,7 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
         controller.add(WeakMessageHandler(self), name: "accent")
         controller.add(WeakMessageHandler(self), name: "pet")
         controller.add(WeakMessageHandler(self), name: "pencil")
+        controller.add(WeakMessageHandler(self), name: "effect")
 
         let view = WKWebView(frame: .zero, configuration: config)
         view.isOpaque = false
@@ -168,6 +170,9 @@ final class StudyController: NSObject, ObservableObject, WKScriptMessageHandler,
                 if CommandLine.arguments.contains("--open-paper"), !paperOpen { paperOpen = true }
                 #endif
             }
+        case "effect":
+            guard let name = message.body as? String, let window = webView.window else { return }
+            FullScreenEffects.play(name, in: window)
         case "pencil":
             guard let body = message.body as? [String: Any], let tool = body["tool"] as? String else { return }
             tools.sync(tool: tool, color: (body["color"] as? Int) ?? tools.inkColorIndex)

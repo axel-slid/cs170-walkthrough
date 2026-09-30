@@ -194,6 +194,8 @@ function drawCoin(r, turn) {
 }
 
 export function coinShower(count = 46) {
+  // On the iPad the app draws it natively over the whole screen, Paper included.
+  if (window.study?.effect) return window.study.effect('coins');
   const W = window.innerWidth;
   const H = window.innerHeight;
   for (let i = 0; i < count; i++) {
@@ -364,5 +366,6 @@ function rocket(delay) {
 }
 
 export function fireworks(shells = 6) {
+  if (window.study?.effect) return window.study.effect('fireworks');
   for (let i = 0; i < shells; i++) rocket(i * 320 + rand(0, 160));
 }
