@@ -1,4 +1,5 @@
 import { exams } from '../content/index.js';
+import { courses } from '../content/courses.js';
 import * as fx from './effects.js';
 import { createPet, spriteSVG, foodSVG, tombSVG } from './pets.js';
 import { createInk } from './ink.js';
@@ -27,7 +28,7 @@ const rich = (tag, cls, html) => {
 let exam = exams[0];
 
 const state = {
-  view: 'part', // 'part' | 'shop' | 'settings' | 'test-start' | 'test' | 'test-results'
+  view: 'home', // 'home' | 'part' | 'shop' | 'settings' | 'test-start' | 'test' | 'test-results'
   solutionOpen: false, // staff solution panel
   questionNumber: exam.questions[0].number,
   partId: exam.questions[0].parts[0].id,
@@ -239,7 +240,8 @@ function renderToolbar() {
   const testing = state.view === 'test' && testActive();
   el('tb-title').hidden = true; // the page says which question it is, above the question
   el('tb-title').textContent =
-    state.view === 'shop' ? 'Shop'
+    state.view === 'home' ? 'Home'
+    : state.view === 'shop' ? 'Shop'
     : state.view === 'settings' ? 'Settings'
     : state.view === 'test-start' ? 'Test mode'
     : state.view === 'test-results' ? 'Test submitted'
@@ -250,7 +252,9 @@ function renderToolbar() {
   el('prev-btn').disabled = (offPage && !testing) || i <= 0;
   el('next-btn').disabled = (offPage && !testing) || i >= allParts().length - 1;
   el('test-btn').classList.toggle('on', state.view.startsWith('test'));
-  el('test-btn').hidden = testing;
+  el('test-btn').hidden = testing || state.view === 'home';
+  el('home-btn').classList.toggle('on', state.view === 'home');
+  document.documentElement.classList.toggle('home-view', state.view === 'home');
   el('test-submit').hidden = !testActive();
   tickTest();
   requestAnimationFrame(fitToolbar);
@@ -323,6 +327,7 @@ function toggleMoreMenu(force) {
 function renderPage() {
   if (state.view === 'shop') return renderShop();
   if (state.view === 'settings') return renderSettings();
+  if (state.view === 'home') return renderHome();
   if (state.view.startsWith('test')) {
     const page = el('page');
     page.replaceChildren();
@@ -1365,6 +1370,85 @@ async function exportTestPDF(button) {
   }
 }
 
+// ---------- home ----------
+
+const DAY = 864e5;
+function examWhen(x) {
+  const start = new Date(x.start);
+  const end = new Date(x.end);
+  const now = new Date();
+  const days = Math.round((new Date(start.getFullYear(), start.getMonth(), start.getDate()) - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / DAY);
+  const time = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: d.getMinutes() ? '2-digit' : undefined });
+  const date = start.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  let away;
+  if (now > end) away = 'done';
+  else if (now >= start) away = 'now';
+  else if (days === 0) away = 'today';
+  else if (days === 1) away = 'tomorrow';
+  else away = `in ${days} days`;
+  return { date, time: `${time(start)}–${time(end)}`, away, past: now > end, soon: !(now > end) && days <= 7 };
+}
+
+function courseFraction(c) {
+  let done = 0;
+  let total = 0;
+  for (const e of exams.filter((x) => x.course === c.course))
+    for (const q of e.questions)
+      for (const p of q.parts) {
+        total += 1;
+        if ((state.progress[`${e.id}:${q.number}.${p.id}`]?.revealed ?? 0) >= p.steps.length) done += 1;
+      }
+  return { done, total, frac: total ? done / total : 0 };
+}
+
+function showHome() {
+  if (state.view === 'test' && testActive()) return toast('Not during a test', 'Submit first');
+  state.view = 'home';
+  state.solutionOpen = false;
+  renderAll();
+}
+
+function openCourse(c) {
+  const last = state.last._exam && exams.find((e) => e.id === state.last._exam && e.course === c.course);
+  state.view = 'part';
+  switchExam((last ?? exams.find((e) => e.course === c.course)).id);
+}
+
+function renderHome() {
+  const page = el('page');
+  page.replaceChildren();
+  page.append(node('h1', null, 'Your classes'));
+  const grid = node('div', 'home-grid');
+  for (const c of courses) {
+    const card = node('button', 'card class-card');
+    const prog = courseFraction(c);
+    const head = node('div', 'class-head');
+    const ringBox = node('span', 'class-ring');
+    ringBox.innerHTML = ring(prog.frac).replace('width="18" height="18"', 'width="44" height="44"');
+    const names = node('div', 'class-names');
+    names.append(node('div', 'class-code', c.course), node('div', 'class-title', c.title), node('div', 'class-sub', `${c.term} · ${prog.done} of ${prog.total} parts done`));
+    head.append(ringBox, names);
+    card.append(head);
+    if (c.exams?.length) {
+      const list = node('div', 'class-exams');
+      const next = c.exams.find((x) => !examWhen(x).past);
+      for (const x of c.exams) {
+        const w = examWhen(x);
+        const row = node('div', `exam-date${w.past ? ' past' : ''}${x === next ? ' next' : ''}${w.soon ? ' soon' : ''}`);
+        row.append(node('span', 'ed-name', x.name), node('span', 'ed-when', `${w.date} · ${w.time}`), node('span', 'ed-away', w.away));
+        list.append(row);
+      }
+      card.append(list);
+    }
+    card.onclick = () => openCourse(c);
+    grid.append(card);
+  }
+  const add = node('div', 'card class-card add-class');
+  add.append(node('div', 'add-plus', '+'), node('div', 'class-title', 'Add a class'), node('div', 'class-sub', 'Coming soon'));
+  grid.append(add);
+  page.append(grid);
+}
+
 // ---------- settings ----------
 
 const TEXT_SIZES = [['Small', 0.92], ['Default', 1], ['Large', 1.1], ['Larger', 1.22]];
@@ -1944,6 +2028,7 @@ el('test-btn').onclick = showTest;
   });
 }
 el('settings-btn').onclick = showSettings;
+el('home-btn').onclick = showHome;
 el('exam-btn').onclick = () => toggleExamMenu();
 document.addEventListener('pointerdown', (e) => {
   if (!el('exam-menu').hidden && !e.target.closest('#exam-menu, #exam-btn')) toggleExamMenu(false);

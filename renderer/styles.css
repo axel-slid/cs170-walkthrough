@@ -1288,3 +1288,31 @@ html.resizing, html.resizing * { cursor: col-resize !important; -webkit-user-sel
 }
 html.sidebar-hidden #side-resize { display: none; }
 #ink-palette { max-width: calc(100% - 28px); flex-wrap: wrap; justify-content: flex-end; }
+
+/* ---------- Home: your classes ---------- */
+html.home-view body { grid-template-columns: 1fr; }
+html.home-view #sidebar, html.home-view .nav-btns, html.home-view #side-btn { display: none; }
+html.home-view:not(.ios) #toolbar { padding-left: 84px; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+.class-card { display: flex; flex-direction: column; gap: 14px; text-align: left; cursor: pointer; margin: 0; font: inherit; color: inherit; transition: border-color 0.15s, transform 0.15s; }
+.class-card:hover { border-color: var(--accent); }
+.class-card:active { transform: scale(0.99); }
+.class-head { display: flex; align-items: center; gap: 14px; }
+.class-ring svg { display: block; }
+.class-ring .ring-track, .class-ring .ring-fill { stroke-width: 1.6; }
+.class-code { font-size: 21px; font-weight: 700; }
+.class-title { font-weight: 550; }
+.class-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+.class-exams { display: flex; flex-direction: column; border-top: 1px solid var(--hairline); padding-top: 10px; gap: 2px; }
+.exam-date { display: grid; grid-template-columns: 76px 1fr auto; gap: 10px; align-items: baseline; padding: 5px 8px; border-radius: 7px; font-size: 13.5px; }
+.ed-name { font-weight: 600; }
+.ed-when { color: var(--text-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ed-away { font-size: 12.5px; font-weight: 600; color: var(--text-dim); white-space: nowrap; }
+.exam-date.next { background: var(--accent-soft); }
+.exam-date.next .ed-away { color: var(--accent); }
+.exam-date.soon .ed-away { color: var(--warn); }
+.exam-date.past { opacity: 0.5; }
+.add-class { align-items: center; justify-content: center; min-height: 170px; border-style: dashed; cursor: default; color: var(--text-dim); gap: 4px; }
+.add-class:hover { border-color: var(--hairline); }
+.add-plus { font-size: 34px; line-height: 1; font-weight: 300; }
+html.home-view .page { max-width: 980px; }
